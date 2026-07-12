@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Pawleys Island Golf Trip — Oct 2026</title>
+<title>The 2026 Carolina Cup</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;600;700&display=swap');
 :root{
@@ -27,11 +27,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--white);min-
 
 /* HEADER */
 .hdr{background:linear-gradient(160deg,#0e1b14 0%,#1c3527 60%,#243b2e 100%);border-bottom:2px solid var(--gold);padding:22px 18px 14px;text-align:center;}
-.hdr-flag{font-size:26px;display:block;margin-bottom:3px;}
-.hdr-eye{font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);margin-bottom:4px;}
-.hdr h1{font-family:'Playfair Display',serif;font-size:clamp(20px,6vw,36px);font-weight:900;line-height:1.05;}
-.hdr-sub{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:1px;}
-.sync-status{font-size:10px;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:5px;}
+.hdr-flag{font-size:26px;display:block;margin-bottom:4px;}
+.hdr-est{font-size:9px;letter-spacing:5px;text-transform:uppercase;color:var(--gold);opacity:.7;margin-bottom:2px;}
+.hdr-cup{font-family:'Playfair Display',serif;font-size:clamp(26px,7vw,44px);font-weight:900;line-height:1.0;color:var(--white);}
+.hdr-year{font-family:'Playfair Display',serif;font-size:clamp(13px,3.5vw,20px);font-weight:700;color:var(--gold);letter-spacing:3px;margin-top:1px;display:block;}
+.hdr-rule{width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:8px auto 7px;}
+.hdr-sub{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
+.hdr-divider{font-size:10px;color:var(--gold);opacity:.5;margin:0 5px;}
+.sync-status{font-size:10px;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:5px;}
 .sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green-lt);display:inline-block;}
 .sync-dot.pending{background:var(--gold);animation:pulse 1s infinite;}
 .sync-dot.err{background:var(--red);}
@@ -217,10 +220,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--white);min-
 </div>
 
 <div class="hdr">
-  <span class="hdr-flag">⛳</span>
-  <div class="hdr-eye">Golf Trip Tracker</div>
-  <h1>Pawleys Island — Oct 2026</h1>
-  <div class="hdr-sub">Oct 2–3 · Willbrook · River Club · Pawleys · Founders</div>
+  <span class="hdr-flag">🏆</span>
+  <div class="hdr-est">Est. 2026</div>
+  <div class="hdr-cup">The Carolina Cup</div>
+  <span class="hdr-year">2026</span>
+  <div class="hdr-rule"></div>
+  <div class="hdr-sub">
+    Pawleys Island, SC
+    <span class="hdr-divider">·</span>
+    Oct 2–3
+    <span class="hdr-divider">·</span>
+    8 Players
+    <span class="hdr-divider">·</span>
+    4 Rounds
+  </div>
   <div class="sync-status">
     <span class="sync-dot" id="syncDot"></span>
     <span id="syncLabel" style="color:var(--muted);font-size:10px;">Connecting…</span>
@@ -1034,7 +1047,7 @@ function renderStandings() {
     return;
   }
 
-  let html = `<div class="card"><div class="card-hdr"><div class="card-title">🏆 Trip Standings</div>
+  let html = `<div class="card"><div class="card-hdr"><div class="card-title">🏆 Carolina Cup Standings</div>
     <span style="font-size:11px;color:var(--green-lt);"><span class="live-dot"></span>Live</span></div>
     <div class="card-body" style="padding:8px 0 0;overflow-x:auto;"><table class="lb-table">
     <thead><tr><th>#</th><th>Player</th>
