@@ -432,22 +432,21 @@ const SCRAMBLE_PTS=[20,14,8,4], BB_PTS={win:20,lose:8,tie:14}, STROKE_PTS=[30,22
 const TCOLORS=['ta','tb','tc','td'], TNAMES=['Team 1','Team 2','Team 3','Team 4'];
 const BBCOLORS=['ta','tb'], BBNAMES=['Team A','Team B'];
 
-// JSONBin config — shared live storage
-const BIN_ID  = '685caeef8960c979a59a5f7d';
-const BIN_KEY = '$2a$10$h7TYjqF2X7kNeLkMqU3WM.5Iu1hTN0Y5m5J5p9nQk9X3vR8wOy8Cy';
-const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+// ═══════════════════════════════════════════════
+//  FIREBASE CONFIG
+// ═══════════════════════════════════════════════
+const FB_URL = 'https://carolina-cup-default-rtdb.firebaseio.com/state.json';
 
 // ═══════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════
 let myPlayerIdx = null;
 let currentRound = 0;
-let pollTimer = null;
-let lastSyncHash = '';
-let pendingSave = false;
 let saveTimer = null;
+let fbListener = null;
+let lastSyncHash = '';
 
-// Shared state synced via JSONBin
+// Shared state synced via Firebase
 let S = {
   handicaps: [null,null,null,null,null,null,null,null],
   teamsGenerated: false,
@@ -461,7 +460,7 @@ let S = {
 };
 
 // ═══════════════════════════════════════════════
-//  SYNC — JSONBin REST API
+//  SYNC — Firebase REST + SSE streaming
 // ═══════════════════════════════════════════════
 function setSyncStatus(state, label) {
   const bar = document.getElementById('syncBar');
@@ -472,40 +471,41 @@ function setSyncStatus(state, label) {
   if (lbl) lbl.textContent = label;
 }
 
+function mergeRemote(remote) {
+  if (!remote) return;
+  if (remote.handicaps)                S.handicaps       = remote.handicaps;
+  if (remote.teamsGenerated !== undefined) S.teamsGenerated = remote.teamsGenerated;
+  if (remote.teams)                    S.teams           = remote.teams;
+  if (remote.formats)                  S.formats         = remote.formats;
+  if (remote.holeScores) {
+    for (let r = 0; r < 4; r++) {
+      for (let pi = 0; pi < 8; pi++) {
+        // Remote always wins for other players; local wins for my own scores
+        if (pi !== myPlayerIdx) {
+          S.holeScores[r][pi] = remote.holeScores[r]?.[pi] || {};
+        }
+      }
+    }
+  }
+}
+
 async function dbLoad() {
   setSyncStatus('syncing', 'Loading…');
   try {
-    const res = await fetch(BIN_URL + '/latest', {
-      headers: { 'X-Master-Key': BIN_KEY }
-    });
+    const res = await fetch(FB_URL);
     if (!res.ok) throw new Error(res.status);
-    const data = await res.json();
-    const remote = data.record;
+    const remote = await res.json();
     const hash = JSON.stringify(remote);
     if (hash !== lastSyncHash) {
       lastSyncHash = hash;
-      // Merge remote into S — remote wins for all fields
-      if (remote.handicaps) S.handicaps = remote.handicaps;
-      if (remote.teamsGenerated !== undefined) S.teamsGenerated = remote.teamsGenerated;
-      if (remote.teams) S.teams = remote.teams;
-      if (remote.formats) S.formats = remote.formats;
-      if (remote.holeScores) {
-        // Per-player merge: remote wins for other players, local wins for my player
-        for (let r = 0; r < 4; r++) {
-          for (let pi = 0; pi < 8; pi++) {
-            if (pi !== myPlayerIdx) {
-              S.holeScores[r][pi] = remote.holeScores[r]?.[pi] || {};
-            }
-          }
-        }
-      }
+      mergeRemote(remote);
       renderAll();
     }
     setSyncStatus('ok', 'Live ●');
     setTimeout(() => setSyncStatus('', 'Live ●'), 800);
   } catch(e) {
-    setSyncStatus('err', 'Offline');
-    console.warn('Load error:', e);
+    setSyncStatus('err', 'Offline — check connection');
+    console.warn('Firebase load error:', e);
   }
 }
 
@@ -514,26 +514,53 @@ async function dbSave() {
   saveTimer = setTimeout(async () => {
     setSyncStatus('syncing', 'Saving…');
     try {
-      const res = await fetch(BIN_URL, {
+      const res = await fetch(FB_URL, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'X-Master-Key': BIN_KEY },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(S)
       });
       if (!res.ok) throw new Error(res.status);
-      const data = await res.json();
-      lastSyncHash = JSON.stringify(data.record);
+      const saved = await res.json();
+      lastSyncHash = JSON.stringify(saved);
       setSyncStatus('ok', 'Saved ✓');
       setTimeout(() => setSyncStatus('', 'Live ●'), 1500);
     } catch(e) {
-      setSyncStatus('err', 'Save failed — retry?');
-      console.warn('Save error:', e);
+      setSyncStatus('err', 'Save failed — check connection');
+      console.warn('Firebase save error:', e);
     }
-  }, 800); // debounce 800ms so rapid hole entry doesn't spam
+  }, 600);
 }
 
-function startPolling() {
-  if (pollTimer) clearInterval(pollTimer);
-  pollTimer = setInterval(dbLoad, 8000); // poll every 8s
+// Firebase SSE streaming — push updates to all devices instantly
+function startRealtimeSync() {
+  if (fbListener) fbListener.close();
+  try {
+    const streamURL = 'https://carolina-cup-default-rtdb.firebaseio.com/state.json';
+    fbListener = new EventSource(streamURL + '?event=put');
+    fbListener.addEventListener('put', (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (!msg || !msg.data) return;
+        const remote = msg.path === '/' ? msg.data : null;
+        if (!remote) return;
+        const hash = JSON.stringify(remote);
+        if (hash === lastSyncHash) return;
+        lastSyncHash = hash;
+        mergeRemote(remote);
+        renderAll();
+        setSyncStatus('ok', 'Live ●');
+      } catch(err) { /* ignore parse errors */ }
+    });
+    fbListener.onerror = () => {
+      setSyncStatus('err', 'Reconnecting…');
+      // EventSource auto-reconnects, so just update the label
+      setTimeout(() => setSyncStatus('', 'Live ●'), 3000);
+    };
+    fbListener.onopen = () => setSyncStatus('', 'Live ●');
+  } catch(e) {
+    // SSE not supported — fall back to polling
+    setInterval(dbLoad, 8000);
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -584,15 +611,9 @@ function selectPlayer(i) {
   document.getElementById('adminBtn').style.display = i === ADMIN_IDX ? 'block' : 'none';
   renderAll();
 
-  // If this player has no handicap yet, prompt them
+  // Prompt for handicap if not yet set — same flow for everyone including admin
   if (S.handicaps[i] === null) {
-    if (i === ADMIN_IDX) {
-      // Jacob G sets everyone's via the admin modal
-      setTimeout(() => showAdminModal(), 300);
-    } else {
-      // Everyone else enters just their own
-      setTimeout(() => showHcpPrompt(i), 300);
-    }
+    setTimeout(() => showHcpPrompt(i), 300);
   }
 }
 
@@ -611,15 +632,23 @@ async function saveHcpPrompt() {
     return;
   }
   S.handicaps[myPlayerIdx] = parseInt(val);
+
+  // Auto-generate teams if all 8 handicaps are now set
+  if (allHandicapsSet() && !S.teamsGenerated) {
+    generateFairTeams();
+    toast('All handicaps in — fair teams generated! 🏌️');
+  } else {
+    const remaining = S.handicaps.filter(h => h === null).length;
+    toast(`Handicap saved ✓  (${remaining} player${remaining !== 1 ? 's' : ''} still TBD)`);
+  }
+
   closeModal('hcpPromptModal');
-  toast(`Handicap ${val} saved ✓`);
   await dbSave();
   renderAll();
 }
 
 function skipHcpPrompt() {
   closeModal('hcpPromptModal');
-  // Navigate to setup tab and scroll to player table so they can enter it manually later
   showTab('setup');
   setTimeout(() => {
     const table = document.getElementById('playerTable');
@@ -1218,15 +1247,14 @@ async function init() {
     updatePlayerPill();
     document.getElementById('adminBtn').style.display = myPlayerIdx === ADMIN_IDX ? 'block' : 'none';
   } else {
-    // Show modal after a short delay so page renders first
     setTimeout(showPlayerModal, 600);
   }
 
-  // Load from cloud
+  // Load initial state from Firebase
   await dbLoad();
 
-  // Start polling for other players' updates
-  startPolling();
+  // Start real-time push sync — all devices update instantly when anyone saves
+  startRealtimeSync();
 
   renderAll();
 }
