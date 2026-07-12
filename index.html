@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Pawleys Island Golf Trip — Oct 2026</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;600;700&display=swap');
+:root{
+  --bg:#12201a;--surface:#1c2e23;--surface2:#243b2e;
+  --border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.05);
+  --gold:#c9a84c;--gold-lt:#e8c97a;--gold-dim:rgba(201,168,76,0.16);
+  --green:#3a7d52;--green-lt:#4fa36b;
+  --white:#f5f5f0;--muted:rgba(245,245,240,0.45);--faint:rgba(245,245,240,0.14);
+  --red:#c0392b;--purple:#9b59b6;--pur-ac:#c8a0e8;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--white);min-height:100vh;font-size:14px;-webkit-tap-highlight-color:transparent;}
+
+/* SYNC BAR */
+#syncBar{position:fixed;top:0;left:0;right:0;height:3px;z-index:999;background:transparent;transition:background .3s;}
+#syncBar.syncing{background:linear-gradient(90deg,var(--gold),var(--green-lt),var(--gold));background-size:200%;animation:sa 1.2s linear infinite;}
+#syncBar.ok{background:var(--green-lt);}
+#syncBar.err{background:var(--red);}
+@keyframes sa{0%{background-position:0%}100%{background-position:200%}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* HEADER */
+.hdr{background:linear-gradient(160deg,#0e1b14 0%,#1c3527 60%,#243b2e 100%);border-bottom:2px solid var(--gold);padding:22px 18px 14px;text-align:center;}
+.hdr-flag{font-size:26px;display:block;margin-bottom:3px;}
+.hdr-eye{font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);margin-bottom:4px;}
+.hdr h1{font-family:'Playfair Display',serif;font-size:clamp(20px,6vw,36px);font-weight:900;line-height:1.05;}
+.hdr-sub{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:1px;}
+.sync-status{font-size:10px;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:5px;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green-lt);display:inline-block;}
+.sync-dot.pending{background:var(--gold);animation:pulse 1s infinite;}
+.sync-dot.err{background:var(--red);}
+.player-pill{display:inline-flex;align-items:center;gap:6px;background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;color:var(--gold-lt);cursor:pointer;margin-top:6px;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal{background:var(--surface);border:1px solid rgba(201,168,76,.3);border-radius:12px;padding:22px;width:100%;max-width:340px;}
+.modal h2{font-family:'Playfair Display',serif;color:var(--gold);font-size:20px;margin-bottom:6px;}
+.modal p{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;}
+.player-btn{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:7px;color:var(--white);font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;transition:all .15s;}
+.player-btn:hover,.player-btn.selected{background:var(--gold-dim);border-color:rgba(201,168,76,.4);color:var(--gold-lt);}
+.player-btn .av{width:28px;height:28px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.modal-hcp{font-size:11px;color:var(--muted);margin-left:auto;font-family:'Roboto Mono',monospace;}
+
+/* SETUP MODAL */
+.setup-field{margin-bottom:12px;}
+.setup-field label{display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.setup-input{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:9px 11px;color:var(--white);font-family:'Inter',sans-serif;font-size:14px;outline:none;}
+.setup-input:focus{border-color:var(--gold);}
+
+/* TABS */
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:0;z-index:50;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex:1;min-width:56px;padding:11px 4px;font-size:10px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s;}
+.tab:hover{color:var(--white);}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+
+/* PANELS */
+.panel{display:none;padding:13px;max-width:740px;margin:0 auto;}
+.panel.active{display:block;}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:13px;overflow:hidden;}
+.card-hdr{background:var(--gold-dim);border-bottom:1px solid rgba(201,168,76,.2);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;}
+.card-title{font-family:'Playfair Display',serif;font-size:15px;color:var(--gold);display:flex;align-items:center;gap:8px;}
+.card-body{padding:12px 14px;}
+
+/* FORM */
+.field-input,.field-select{background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--white);font-family:'Inter',sans-serif;font-size:13px;outline:none;width:100%;transition:border-color .2s;}
+.field-input:focus,.field-select:focus{border-color:var(--gold);}
+.field-input::placeholder{color:var(--faint);}
+.field-select option{background:var(--bg);}
+.inline-label{background:var(--gold);color:var(--bg);font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;white-space:nowrap;}
+
+/* PLAYERS TABLE */
+.players-table{width:100%;border-collapse:collapse;}
+.players-table th{font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);padding:7px 5px;text-align:left;border-bottom:1px solid var(--border);}
+.players-table td{padding:6px 4px;border-bottom:1px solid var(--border2);}
+.players-table tr:last-child td{border-bottom:none;}
+.pi-num{font-family:'Roboto Mono',monospace;font-size:11px;color:var(--gold);}
+.hdcp-input{width:52px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:5px;padding:6px 5px;color:var(--white);font-family:'Roboto Mono',monospace;font-size:13px;text-align:center;outline:none;}
+.hdcp-input:focus{border-color:var(--gold);}
+.me-chip{font-size:9px;background:var(--gold-dim);color:var(--gold);border-radius:3px;padding:1px 5px;font-weight:700;vertical-align:middle;margin-left:4px;}
+
+/* HCP HOLE GRID */
+.hcp-hole-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;margin-bottom:5px;}
+.hcp-hole-cell{display:flex;flex-direction:column;align-items:center;gap:1px;}
+.hcp-hole-num{font-size:9px;color:var(--muted);font-family:'Roboto Mono',monospace;}
+.hcp-hole-par{font-size:8px;color:rgba(201,168,76,0.6);font-family:'Roboto Mono',monospace;}
+.hcp-hole-val{font-size:11px;font-family:'Roboto Mono',monospace;color:var(--white);background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:3px;width:26px;text-align:center;padding:3px 0;}
+
+/* TEAMS */
+.team-badge{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 7px;border-radius:4px;white-space:nowrap;}
+.ta{background:rgba(41,128,185,.22);color:#7fc3f0;border:1px solid rgba(41,128,185,.35);}
+.tb{background:rgba(192,57,43,.22);color:#f0957c;border:1px solid rgba(192,57,43,.35);}
+.tc{background:rgba(142,68,173,.22);color:#c8a0e8;border:1px solid rgba(142,68,173,.35);}
+.td{background:rgba(39,174,96,.22);color:#7ee8a2;border:1px solid rgba(39,174,96,.35);}
+
+/* ROUND TABS */
+.round-tabs{display:flex;gap:6px;margin-bottom:13px;}
+.round-tab{flex:1;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:9px 4px;text-align:center;cursor:pointer;transition:all .2s;color:var(--muted);}
+.round-tab.active{background:var(--gold-dim);border-color:rgba(201,168,76,.4);color:var(--gold);}
+.round-tab-r{font-size:9px;letter-spacing:1px;text-transform:uppercase;}
+.round-tab-name{font-size:10px;font-weight:600;margin-top:2px;}
+.round-tab-fmt{font-size:9px;margin-top:1px;}
+
+/* SCORE TABLE */
+.stbl{width:100%;border-collapse:collapse;}
+.stbl th{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);padding:7px 4px;border-bottom:1px solid var(--border);text-align:center;}
+.stbl th:first-child{text-align:left;}
+.stbl td{padding:5px 3px;border-bottom:1px solid var(--border2);vertical-align:middle;}
+.stbl tr:last-child td{border-bottom:none;}
+.stbl tr.my-row td{background:rgba(201,168,76,.05);}
+.pname-cell{display:flex;align-items:center;gap:6px;min-width:80px;}
+.avatar{width:24px;height:24px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+
+/* HOLE INPUTS */
+.hole-input-wrap{display:flex;flex-wrap:wrap;gap:2px;}
+.h-cell{display:flex;flex-direction:column;align-items:center;}
+.h-num{font-size:8px;color:var(--muted);font-family:'Roboto Mono',monospace;}
+.h-dots{height:9px;display:flex;align-items:center;justify-content:center;gap:1px;}
+.h-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);display:inline-block;flex-shrink:0;}
+.h-inp{width:26px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:3px;padding:3px 1px;color:var(--white);font-family:'Roboto Mono',monospace;font-size:11px;text-align:center;outline:none;transition:background .15s,border-color .15s;}
+.h-inp:focus{border-color:var(--gold);background:rgba(201,168,76,.08);}
+.h-inp:disabled{opacity:.3;cursor:not-allowed;}
+.h-inp.eagle{background:rgba(201,168,76,.22);border-color:var(--gold);}
+.h-inp.birdie{background:rgba(79,163,106,.2);border-color:#4fa36b;}
+.h-inp.par{background:rgba(255,255,255,.05);}
+.h-inp.bogey{background:rgba(192,57,43,.15);border-color:var(--red);}
+.h-inp.double{background:rgba(192,57,43,.28);border-color:var(--red);}
+.net-cell{font-family:'Roboto Mono',monospace;font-size:12px;text-align:center;color:var(--gold-lt);min-width:30px;}
+
+/* LEADERBOARD */
+.lb-table{width:100%;border-collapse:collapse;}
+.lb-table th{font-size:9px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);padding:8px 7px;border-bottom:1px solid var(--border);text-align:center;}
+.lb-table th:nth-child(2){text-align:left;}
+.lb-table td{padding:9px 7px;border-bottom:1px solid var(--border2);text-align:center;font-size:13px;}
+.lb-table td:nth-child(2){text-align:left;}
+.lb-table tr:last-child td{border-bottom:none;}
+.lb-table tr.my-lb-row td{background:rgba(201,168,76,.06);}
+.lb-rank{font-family:'Roboto Mono',monospace;font-size:14px;font-weight:700;width:32px;}
+.lb-rank.r1{color:var(--gold);}.lb-rank.r2{color:#c0c0c0;}.lb-rank.r3{color:#cd7f32;}.lb-rank.rn{color:var(--muted);font-size:11px;}
+.lb-name-cell{display:flex;align-items:center;gap:7px;}
+.lb-av{width:27px;height:27px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.lb-pts{font-family:'Roboto Mono',monospace;font-size:16px;font-weight:700;color:var(--gold);}
+.lb-rpt{font-family:'Roboto Mono',monospace;font-size:12px;color:var(--muted);}
+.skin-chip{font-size:10px;font-family:'Roboto Mono',monospace;background:var(--gold-dim);border:1px solid rgba(201,168,76,.3);color:var(--gold-lt);border-radius:4px;padding:2px 5px;display:inline-block;margin:1px;}
+
+/* GUIDE */
+.guide-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden;}
+.guide-hdr{background:var(--gold-dim);border-bottom:1px solid rgba(201,168,76,.2);padding:11px 15px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;}
+.guide-title{font-family:'Playfair Display',serif;font-size:16px;color:var(--gold);}
+.guide-badge{font-size:10px;letter-spacing:1px;text-transform:uppercase;background:rgba(201,168,76,.12);color:var(--gold);padding:3px 7px;border-radius:20px;border:1px solid rgba(201,168,76,.3);}
+.guide-badge-fun{background:rgba(142,68,173,.15);color:#c8a0e8;border-color:rgba(142,68,173,.4);}
+.guide-body{padding:13px 15px;}
+.guide-desc{font-size:13px;color:rgba(255,255,255,.75);line-height:1.65;margin-bottom:11px;}
+.pts-lbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.pts-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.pts-item{background:rgba(255,255,255,.04);border-radius:6px;padding:7px 9px;display:flex;justify-content:space-between;align-items:center;}
+.pts-key{font-size:12px;color:var(--muted);}
+.pts-val{font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:var(--gold);}
+.note{font-size:11px;color:var(--muted);line-height:1.6;margin-top:8px;padding:7px 9px;background:rgba(255,255,255,.03);border-radius:6px;border-left:2px solid var(--gold);}
+
+/* MISC */
+.btn{border:none;border-radius:7px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:700;letter-spacing:.8px;text-transform:uppercase;transition:filter .15s;}
+.btn:hover{filter:brightness(1.1);}
+.btn-gold{background:var(--gold);color:var(--bg);padding:12px;font-size:13px;width:100%;}
+.btn-green{background:var(--green);color:var(--white);padding:10px;font-size:12px;width:100%;margin-top:11px;}
+.btn-sm{padding:7px 14px;font-size:11px;border-radius:6px;}
+.alert{background:var(--gold-dim);border:1px solid rgba(201,168,76,.25);border-radius:8px;padding:12px;font-size:13px;color:var(--muted);text-align:center;margin-bottom:12px;}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--green);color:var(--white);padding:10px 17px;border-radius:8px;font-size:13px;font-weight:600;z-index:200;pointer-events:none;opacity:0;transition:opacity .25s;white-space:nowrap;}
+.toast.show{opacity:1;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green-lt);display:inline-block;animation:pulse 2s infinite;margin-right:4px;}
+@media(max-width:400px){.h-inp{width:22px;font-size:10px;}.hcp-hole-val{width:22px;font-size:10px;}}
+</style>
+</head>
+<body>
+<div id="syncBar"></div>
+
+<!-- PLAYER SELECT MODAL -->
+<div id="playerModal" class="modal-overlay" style="display:none;">
+  <div class="modal">
+    <h2>Who are you? 👋</h2>
+    <p>Select your name to enter your own scores. You can only edit your own holes.</p>
+    <div id="playerBtnList"></div>
+  </div>
+</div>
+
+<!-- ADMIN SETUP MODAL -->
+<div id="adminModal" class="modal-overlay" style="display:none;">
+  <div class="modal">
+    <h2>⚙️ Admin Setup</h2>
+    <p>Enter handicaps and generate teams. You must be Jacob G to access this.</p>
+    <div id="adminFields"></div>
+    <button class="btn btn-gold" style="margin-top:10px;" onclick="saveAdminSetup()">Save & Generate Teams</button>
+    <button class="btn" style="width:100%;margin-top:8px;background:rgba(255,255,255,.06);color:var(--muted);padding:10px;font-size:12px;" onclick="closeModal('adminModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- HANDICAP PROMPT MODAL -->
+<div id="hcpPromptModal" class="modal-overlay" style="display:none;">
+  <div class="modal">
+    <h2>One quick thing ⛳</h2>
+    <p id="hcpPromptText" style="margin-bottom:16px;"></p>
+    <div class="setup-field">
+      <label>Your Handicap Index</label>
+      <input class="setup-input" type="number" min="0" max="36" id="hcpPromptInput" placeholder="e.g. 14">
+    </div>
+    <button class="btn btn-gold" style="margin-top:10px;" onclick="saveHcpPrompt()">Save My Handicap</button>
+    <button class="btn" style="width:100%;margin-top:8px;background:rgba(255,255,255,.06);color:var(--muted);padding:10px;font-size:12px;" onclick="skipHcpPrompt()">I'll do this later</button>
+  </div>
+</div>
+
+<div class="hdr">
+  <span class="hdr-flag">⛳</span>
+  <div class="hdr-eye">Golf Trip Tracker</div>
+  <h1>Pawleys Island — Oct 2026</h1>
+  <div class="hdr-sub">Oct 2–3 · Willbrook · River Club · Pawleys · Founders</div>
+  <div class="sync-status">
+    <span class="sync-dot" id="syncDot"></span>
+    <span id="syncLabel" style="color:var(--muted);font-size:10px;">Connecting…</span>
+  </div>
+  <div id="playerPill" class="player-pill" onclick="showPlayerModal()" style="display:none;">
+    <span id="pillName">Select Player</span>
+    <span style="font-size:10px;color:var(--muted);">tap to change</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('setup')">Setup</button>
+  <button class="tab" onclick="showTab('scoring')">Scoring</button>
+  <button class="tab" onclick="showTab('skins')">Skins</button>
+  <button class="tab" onclick="showTab('standings')">Standings</button>
+  <button class="tab" onclick="showTab('guide')">Guide</button>
+</div>
+
+<div id="tab-setup" class="panel active">
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">📅 Itinerary</div></div>
+    <div class="card-body">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span class="inline-label">R1</span><div><div style="font-weight:600;font-size:13px;">Willbrook Plantation</div><div style="font-size:11px;color:var(--muted);">Oct 2 · 8:01 AM · 8 golfers</div></div>
+          <span style="margin-left:auto;font-size:11px;color:var(--green-lt);">2-Man Scramble</span>
+        </div>
+        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span class="inline-label">R2</span><div><div style="font-weight:600;font-size:13px;">River Club</div><div style="font-size:11px;color:var(--muted);">Oct 2 · 2:06 PM · 8 golfers</div></div>
+          <span style="margin-left:auto;font-size:11px;color:var(--green-lt);">4-Man Best Ball</span>
+        </div>
+        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span class="inline-label">R3</span><div><div style="font-weight:600;font-size:13px;">Pawleys Plantation</div><div style="font-size:11px;color:var(--muted);">Oct 3 · 8:00 AM · 8 golfers</div></div>
+          <span style="margin-left:auto;font-size:11px;color:var(--green-lt);">Stroke Play</span>
+        </div>
+        <div style="background:rgba(142,68,173,.08);border:1px solid rgba(142,68,173,.2);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span class="inline-label" style="background:#9b59b6;">R4</span><div><div style="font-weight:600;font-size:13px;">Founders Club</div><div style="font-size:11px;color:var(--muted);">Oct 3 · 1:46 PM · 8 golfers</div></div>
+          <span style="margin-left:auto;font-size:11px;color:#c8a0e8;">🍺 Fun Round</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">👥 Players &amp; Handicaps</div></div>
+    <div class="card-body" style="padding:9px 12px;"><table class="players-table" id="playerTable"></table></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">🏆 Teams</div></div>
+    <div class="card-body" id="teamsBody"><div class="alert" style="margin:0">Enter handicaps and save to generate teams.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">📋 Course Handicap Hole Ratings</div><span style="font-size:11px;color:var(--muted);">From official scorecards</span></div>
+    <div class="card-body" id="holeHcpBody"></div>
+  </div>
+
+  <div id="adminBtn" style="display:none;">
+    <button class="btn btn-gold" onclick="showAdminModal()">⚙️ Admin: Edit Handicaps &amp; Teams</button>
+  </div>
+</div>
+
+<div id="tab-scoring" class="panel"><div id="scoringContent"><div class="alert">Loading…</div></div></div>
+<div id="tab-skins"    class="panel"><div id="skinsContent"><div class="alert">Loading…</div></div></div>
+<div id="tab-standings" class="panel"><div id="standingsContent"><div class="alert">Loading…</div></div></div>
+
+<div id="tab-guide" class="panel">
+  <div class="guide-card">
+    <div class="guide-hdr"><div class="guide-title">Format Recommendations</div><div class="guide-badge">Why This Order</div></div>
+    <div class="guide-body">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="background:rgba(255,255,255,.04);border-radius:7px;padding:10px 12px;"><div style="font-weight:600;font-size:13px;color:var(--gold-lt);margin-bottom:4px;">R1 · Willbrook → 2-Man Scramble</div><div style="font-size:12px;color:rgba(255,255,255,.7);line-height:1.6;">Willbrook is the most forgiving course — wider fairways, beautiful but not punishing. Perfect opener to shake off travel. The scramble format keeps everyone relaxed and social.</div></div>
+        <div style="background:rgba(255,255,255,.04);border-radius:7px;padding:10px 12px;"><div style="font-weight:600;font-size:13px;color:var(--gold-lt);margin-bottom:4px;">R2 · River Club → 4-Man Best Ball</div><div style="font-size:12px;color:rgba(255,255,255,.7);line-height:1.6;">River Club has water on 15 of 18 holes and 100+ bunkers. Best ball is ideal — the team absorbs blowup holes while the hot hand carries the score.</div></div>
+        <div style="background:rgba(255,255,255,.04);border-radius:7px;padding:10px 12px;"><div style="font-weight:600;font-size:13px;color:var(--gold-lt);margin-bottom:4px;">R3 · Pawleys Plantation → Stroke Play</div><div style="font-size:12px;color:rgba(255,255,255,.7);line-height:1.6;">Pawleys is the crown jewel — Jack Nicklaus design, slope 150, marsh par 3s on 13 and 17. The championship round where every stroke matters on the most dramatic course of the trip.</div></div>
+        <div style="background:rgba(142,68,173,.08);border:1px solid rgba(142,68,173,.2);border-radius:7px;padding:10px 12px;"><div style="font-weight:600;font-size:13px;color:#c8a0e8;margin-bottom:4px;">R4 · Founders Club → Fun Round 🍺</div><div style="font-size:12px;color:rgba(255,255,255,.7);line-height:1.6;">No points, no pressure. The trip champion is crowned after Pawleys. Founders is the send-off round — just cold drinks and good stories.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="guide-card">
+    <div class="guide-hdr"><div class="guide-title">Round 1 · Willbrook — 2-Man Scramble</div><div class="guide-badge">Oct 2 · 8:01 AM</div></div>
+    <div class="guide-body">
+      <div class="guide-desc">Four teams of two. Both players hit every shot — team picks best ball and both play from there. Net team score (minus 35%/15% handicap allowance) determines finish order.</div>
+      <div class="pts-lbl">Team Trip Points</div>
+      <div class="pts-grid">
+        <div class="pts-item"><span class="pts-key">1st Place</span><span class="pts-val">20 ea</span></div>
+        <div class="pts-item"><span class="pts-key">2nd Place</span><span class="pts-val">14 ea</span></div>
+        <div class="pts-item"><span class="pts-key">3rd Place</span><span class="pts-val">8 ea</span></div>
+        <div class="pts-item"><span class="pts-key">4th Place</span><span class="pts-val">4 ea</span></div>
+      </div>
+      <div class="note">Scramble handicap: 35% of lower-index partner + 15% of higher-index partner. Individual skins still run hole-by-hole.</div>
+    </div>
+  </div>
+
+  <div class="guide-card">
+    <div class="guide-hdr"><div class="guide-title">Round 2 · River Club — 4-Man Best Ball</div><div class="guide-badge">Oct 2 · 2:06 PM</div></div>
+    <div class="guide-body">
+      <div class="guide-desc">Two teams of four. Each player plays their own ball with full handicap strokes. Best individual net score per hole counts for the team. Lowest team net total wins.</div>
+      <div class="pts-lbl">Team Trip Points</div>
+      <div class="pts-grid">
+        <div class="pts-item"><span class="pts-key">Winning Team</span><span class="pts-val">20 ea</span></div>
+        <div class="pts-item"><span class="pts-key">Losing Team</span><span class="pts-val">8 ea</span></div>
+        <div class="pts-item"><span class="pts-key">Tie</span><span class="pts-val">14 ea</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="guide-card">
+    <div class="guide-hdr"><div class="guide-title">Round 3 · Pawleys Plantation — Stroke Play</div><div class="guide-badge">Oct 3 · 8:00 AM</div></div>
+    <div class="guide-body">
+      <div class="guide-desc">Individual stroke play, full handicap strokes applied hole-by-hole per official course ratings. Lowest net 18-hole total wins.</div>
+      <div class="pts-lbl">Individual Trip Points</div>
+      <div class="pts-grid">
+        <div class="pts-item"><span class="pts-key">1st</span><span class="pts-val">30 pts</span></div>
+        <div class="pts-item"><span class="pts-key">2nd</span><span class="pts-val">22 pts</span></div>
+        <div class="pts-item"><span class="pts-key">3rd</span><span class="pts-val">16 pts</span></div>
+        <div class="pts-item"><span class="pts-key">4th</span><span class="pts-val">11 pts</span></div>
+        <div class="pts-item"><span class="pts-key">5th</span><span class="pts-val">7 pts</span></div>
+        <div class="pts-item"><span class="pts-key">6th</span><span class="pts-val">4 pts</span></div>
+        <div class="pts-item"><span class="pts-key">7th</span><span class="pts-val">2 pts</span></div>
+        <div class="pts-item"><span class="pts-key">8th</span><span class="pts-val">1 pt</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="guide-card">
+    <div class="guide-hdr"><div class="guide-title">Skins — Rounds 1, 2 &amp; 3</div><div class="guide-badge">Individual · All Competition Rounds</div></div>
+    <div class="guide-body">
+      <div class="guide-desc">Individual skins run alongside every competition round on net scores. Win a hole outright for a skin. Ties carry to the next hole. In Round 1 each player posts their own score for skins separately from the scramble.</div>
+      <div class="pts-grid">
+        <div class="pts-item"><span class="pts-key">Each Skin Won</span><span class="pts-val">3 pts</span></div>
+        <div class="pts-item"><span class="pts-key">Carryover Skin</span><span class="pts-val">+3 pts</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="guide-card">
+    <div class="guide-hdr"><div class="guide-title">Handicap Stroke Allocation</div><div class="guide-badge">How It Works</div></div>
+    <div class="guide-body">
+      <div class="guide-desc">Each player receives strokes on the holes rated equal to or harder than their handicap index. A 12 handicap gets 1 stroke on holes rated 1–12. Gold dots (●) on your scorecard show exactly which holes you receive strokes on — one dot per stroke.</div>
+      <div class="note">Net score = gross minus strokes received on that hole. The app calculates all net scores automatically.</div>
+    </div>
+  </div>
+
+  <div class="guide-card">
+    <div class="guide-hdr"><div class="guide-title">🍺 Round 4 · Founders Club</div><div class="guide-badge-fun guide-badge">Oct 3 · 1:46 PM · No Points</div></div>
+    <div class="guide-body">
+      <div class="guide-desc">No competition points — trip standings are locked after Round 3. Founders is the send-off. Game formats TBD by the group.</div>
+    </div>
+  </div>
+
+  <div class="guide-card">
+    <div class="guide-hdr"><div class="guide-title">Maximum Points Possible</div><div class="guide-badge">Perfect Weekend</div></div>
+    <div class="guide-body">
+      <div style="background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.04));border:1px solid rgba(201,168,76,.3);border-radius:8px;padding:12px;">
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid rgba(201,168,76,.1);"><span>R1 Scramble (1st place)</span><span style="font-family:'Roboto Mono',monospace;color:var(--gold-lt);">20 pts</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid rgba(201,168,76,.1);"><span>R1 Skins (sweep all 18)</span><span style="font-family:'Roboto Mono',monospace;color:var(--gold-lt);">54 pts</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid rgba(201,168,76,.1);"><span>R2 Best Ball (winning team)</span><span style="font-family:'Roboto Mono',monospace;color:var(--gold-lt);">20 pts</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid rgba(201,168,76,.1);"><span>R2 Skins (sweep all 18)</span><span style="font-family:'Roboto Mono',monospace;color:var(--gold-lt);">54 pts</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid rgba(201,168,76,.1);"><span>R3 Stroke Play (1st place)</span><span style="font-family:'Roboto Mono',monospace;color:var(--gold-lt);">30 pts</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid rgba(201,168,76,.1);"><span>R3 Skins (sweep all 18)</span><span style="font-family:'Roboto Mono',monospace;color:var(--gold-lt);">54 pts</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0 4px;font-size:14px;font-weight:700;"><span>🏆 Theoretical Maximum</span><span style="font-family:'Roboto Mono',monospace;color:var(--gold);font-size:16px;">232 pts</span></div>
+      </div>
+      <div class="note">A dominant weekend realistically lands 80–120 pts. Skins are the biggest swing category.</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  CONSTANTS
+// ═══════════════════════════════════════════════
+const PLAYER_NAMES = ['Jacob G','Jake M','Whit C','Rob E','Ellis M','Chase E','Mark B','Landon M'];
+const ADMIN_IDX = 0; // Jacob G is admin
+
+const COURSES = [
+  { name:'Willbrook Plantation', date:'Oct 2 · 8:01 AM',
+    par:[4,4,5,3,4,3,4,5,4,4,4,3,4,4,5,4,3,5],
+    hcp:[1,5,7,15,3,17,9,13,11,8,14,16,10,6,2,4,18,12] },
+  { name:'River Club', date:'Oct 2 · 2:06 PM',
+    par:[4,3,5,4,4,5,4,3,4,4,5,4,4,3,4,4,3,5],
+    hcp:[5,17,7,15,3,11,9,13,1,8,4,14,12,16,2,6,18,10] },
+  { name:'Pawleys Plantation', date:'Oct 3 · 8:00 AM',
+    par:[5,4,3,5,4,4,3,4,4,4,5,4,3,5,4,4,3,4],
+    hcp:[9,1,15,13,7,3,17,5,11,10,4,16,18,6,12,2,14,8] },
+  { name:'Founders Club', date:'Oct 3 · 1:46 PM',
+    par:[4,4,3,4,3,5,4,4,5,5,3,5,4,4,4,3,4,4],
+    hcp:[17,1,13,3,15,11,9,5,7,4,12,10,14,2,16,18,6,8] }
+];
+
+const FORMAT_LABELS = {scramble:'2-Man Scramble',bestball:'4-Man Best Ball',stroke:'Stroke Play',fun:'🍺 Fun Round'};
+const SCRAMBLE_PTS=[20,14,8,4], BB_PTS={win:20,lose:8,tie:14}, STROKE_PTS=[30,22,16,11,7,4,2,1], SKIN_PTS=3;
+const TCOLORS=['ta','tb','tc','td'], TNAMES=['Team 1','Team 2','Team 3','Team 4'];
+const BBCOLORS=['ta','tb'], BBNAMES=['Team A','Team B'];
+
+// JSONBin config — shared live storage
+const BIN_ID  = '685caeef8960c979a59a5f7d';
+const BIN_KEY = '$2a$10$h7TYjqF2X7kNeLkMqU3WM.5Iu1hTN0Y5m5J5p9nQk9X3vR8wOy8Cy';
+const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let myPlayerIdx = null;
+let currentRound = 0;
+let pollTimer = null;
+let lastSyncHash = '';
+let pendingSave = false;
+let saveTimer = null;
+
+// Shared state synced via JSONBin
+let S = {
+  handicaps: [null,null,null,null,null,null,null,null],
+  teamsGenerated: false,
+  teams: [
+    [{players:[0,1]},{players:[2,3]},{players:[4,5]},{players:[6,7]}],
+    [{players:[0,1,2,3]},{players:[4,5,6,7]}],
+    [],[]
+  ],
+  formats: ['scramble','bestball','stroke','fun'],
+  holeScores: Array(4).fill(null).map(()=>Array(8).fill(null).map(()=>({})))
+};
+
+// ═══════════════════════════════════════════════
+//  SYNC — JSONBin REST API
+// ═══════════════════════════════════════════════
+function setSyncStatus(state, label) {
+  const bar = document.getElementById('syncBar');
+  const dot = document.getElementById('syncDot');
+  const lbl = document.getElementById('syncLabel');
+  bar.className = state;
+  dot.className = 'sync-dot' + (state === 'syncing' ? ' pending' : state === 'err' ? ' err' : '');
+  if (lbl) lbl.textContent = label;
+}
+
+async function dbLoad() {
+  setSyncStatus('syncing', 'Loading…');
+  try {
+    const res = await fetch(BIN_URL + '/latest', {
+      headers: { 'X-Master-Key': BIN_KEY }
+    });
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    const remote = data.record;
+    const hash = JSON.stringify(remote);
+    if (hash !== lastSyncHash) {
+      lastSyncHash = hash;
+      // Merge remote into S — remote wins for all fields
+      if (remote.handicaps) S.handicaps = remote.handicaps;
+      if (remote.teamsGenerated !== undefined) S.teamsGenerated = remote.teamsGenerated;
+      if (remote.teams) S.teams = remote.teams;
+      if (remote.formats) S.formats = remote.formats;
+      if (remote.holeScores) {
+        // Per-player merge: remote wins for other players, local wins for my player
+        for (let r = 0; r < 4; r++) {
+          for (let pi = 0; pi < 8; pi++) {
+            if (pi !== myPlayerIdx) {
+              S.holeScores[r][pi] = remote.holeScores[r]?.[pi] || {};
+            }
+          }
+        }
+      }
+      renderAll();
+    }
+    setSyncStatus('ok', 'Live ●');
+    setTimeout(() => setSyncStatus('', 'Live ●'), 800);
+  } catch(e) {
+    setSyncStatus('err', 'Offline');
+    console.warn('Load error:', e);
+  }
+}
+
+async function dbSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    setSyncStatus('syncing', 'Saving…');
+    try {
+      const res = await fetch(BIN_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': BIN_KEY },
+        body: JSON.stringify(S)
+      });
+      if (!res.ok) throw new Error(res.status);
+      const data = await res.json();
+      lastSyncHash = JSON.stringify(data.record);
+      setSyncStatus('ok', 'Saved ✓');
+      setTimeout(() => setSyncStatus('', 'Live ●'), 1500);
+    } catch(e) {
+      setSyncStatus('err', 'Save failed — retry?');
+      console.warn('Save error:', e);
+    }
+  }, 800); // debounce 800ms so rapid hole entry doesn't spam
+}
+
+function startPolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(dbLoad, 8000); // poll every 8s
+}
+
+// ═══════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════
+function toast(m) {
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+function showTab(n) {
+  document.querySelectorAll('.tab').forEach((t,i) =>
+    t.classList.toggle('active', ['setup','scoring','skins','standings','guide'][i] === n));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-'+n).classList.add('active');
+  if (n === 'scoring')   renderScoring();
+  if (n === 'skins')     renderSkins();
+  if (n === 'standings') renderStandings();
+  if (n === 'setup')     renderSetupTab();
+}
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function renderAll() {
+  renderScoring();
+  renderSkins();
+  renderStandings();
+  renderSetupTab();
+}
+
+// ═══════════════════════════════════════════════
+//  PLAYER IDENTITY
+// ═══════════════════════════════════════════════
+function showPlayerModal() {
+  const list = document.getElementById('playerBtnList');
+  list.innerHTML = PLAYER_NAMES.map((p, i) => `
+    <button class="player-btn ${myPlayerIdx===i?'selected':''}" onclick="selectPlayer(${i})">
+      <div class="av">${p[0]}</div>
+      <span>${p}</span>
+      <span class="modal-hcp">${S.handicaps[i] !== null ? 'Hdcp ' + S.handicaps[i] : 'TBD'}</span>
+    </button>`).join('');
+  document.getElementById('playerModal').style.display = 'flex';
+}
+
+function selectPlayer(i) {
+  myPlayerIdx = i;
+  localStorage.setItem('myPlayerIdx', i);
+  closeModal('playerModal');
+  updatePlayerPill();
+  document.getElementById('adminBtn').style.display = i === ADMIN_IDX ? 'block' : 'none';
+  renderAll();
+
+  // If this player has no handicap yet, prompt them
+  if (S.handicaps[i] === null) {
+    if (i === ADMIN_IDX) {
+      // Jacob G sets everyone's via the admin modal
+      setTimeout(() => showAdminModal(), 300);
+    } else {
+      // Everyone else enters just their own
+      setTimeout(() => showHcpPrompt(i), 300);
+    }
+  }
+}
+
+function showHcpPrompt(i) {
+  document.getElementById('hcpPromptText').textContent =
+    `Hey ${PLAYER_NAMES[i].split(' ')[0]}! What's your handicap index? This is needed to calculate your strokes on each hole.`;
+  document.getElementById('hcpPromptInput').value = '';
+  document.getElementById('hcpPromptModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('hcpPromptInput').focus(), 100);
+}
+
+async function saveHcpPrompt() {
+  const val = document.getElementById('hcpPromptInput').value;
+  if (val === '' || isNaN(parseInt(val))) {
+    document.getElementById('hcpPromptInput').style.borderColor = 'var(--red)';
+    return;
+  }
+  S.handicaps[myPlayerIdx] = parseInt(val);
+  closeModal('hcpPromptModal');
+  toast(`Handicap ${val} saved ✓`);
+  await dbSave();
+  renderAll();
+}
+
+function skipHcpPrompt() {
+  closeModal('hcpPromptModal');
+  // Navigate to setup tab and scroll to player table so they can enter it manually later
+  showTab('setup');
+  setTimeout(() => {
+    const table = document.getElementById('playerTable');
+    if (table) table.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 200);
+}
+
+function updatePlayerPill() {
+  const pill = document.getElementById('playerPill');
+  const name = document.getElementById('pillName');
+  if (myPlayerIdx !== null) {
+    pill.style.display = 'inline-flex';
+    name.textContent = PLAYER_NAMES[myPlayerIdx];
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  HANDICAP & SCORING MATH
+// ═══════════════════════════════════════════════
+function strokesPerHole(pi, r) {
+  const hcp = S.handicaps[pi] || 0;
+  return COURSES[r].hcp.map(rating =>
+    hcp >= rating ? 1 + (hcp > 18 && (hcp - 18) >= rating ? 1 : 0) : 0
+  );
+}
+function netScore(gross, strokes) {
+  if (gross === '' || gross === null || gross === undefined) return null;
+  return parseInt(gross) - strokes;
+}
+function playerNetTotal(pi, r) {
+  const strokes = strokesPerHole(pi, r);
+  const hs = S.holeScores[r][pi] || {};
+  let total = 0, valid = 0;
+  for (let h = 0; h < 18; h++) {
+    const g = hs[h];
+    if (g !== undefined && g !== '') { total += netScore(parseInt(g), strokes[h]); valid++; }
+  }
+  return valid === 0 ? null : total;
+}
+function scrambleTeamHcp(teamPlayers) {
+  const hcps = teamPlayers.map(pi => S.handicaps[pi] || 0).sort((a,b) => a-b);
+  return Math.round(0.35 * hcps[0] + 0.15 * hcps[1]);
+}
+function scrambleTeamNetTotal(r, ti) {
+  const team = S.teams[r][ti], allow = scrambleTeamHcp(team.players);
+  let gross = 0, holes = 0;
+  for (let h = 0; h < 18; h++) {
+    const scores = team.players.map(pi => {
+      const g = S.holeScores[r][pi]?.[h];
+      return (g !== undefined && g !== '') ? parseInt(g) : null;
+    }).filter(s => s !== null);
+    if (scores.length) { gross += Math.min(...scores); holes++; }
+  }
+  return holes === 0 ? null : gross - allow;
+}
+function scoreClass(val, par) {
+  if (val === '' || val === null) return '';
+  const d = parseInt(val) - par;
+  if (d <= -2) return 'eagle'; if (d === -1) return 'birdie';
+  if (d === 0) return 'par';   if (d === 1)  return 'bogey';
+  return 'double';
+}
+function allHandicapsSet() {
+  return S.handicaps.every(h => h !== null && h !== undefined);
+}
+function generateFairTeams() {
+  const sorted = S.handicaps.map((h,i) => ({pi:i, hcp:h})).sort((a,b) => a.hcp - b.hcp);
+  S.teams[0] = [
+    {players:[sorted[0].pi, sorted[7].pi]},
+    {players:[sorted[1].pi, sorted[6].pi]},
+    {players:[sorted[2].pi, sorted[5].pi]},
+    {players:[sorted[3].pi, sorted[4].pi]},
+  ];
+  S.teams[1] = [
+    {players:[sorted[0].pi, sorted[3].pi, sorted[4].pi, sorted[7].pi]},
+    {players:[sorted[1].pi, sorted[2].pi, sorted[5].pi, sorted[6].pi]},
+  ];
+  S.teamsGenerated = true;
+}
+
+// ═══════════════════════════════════════════════
+//  HOLE INPUTS ROW
+// ═══════════════════════════════════════════════
+function holeInputsRow(r, pi) {
+  const strokes = strokesPerHole(pi, r);
+  const hs = S.holeScores[r][pi] || {};
+  const par = COURSES[r].par;
+  const isMe = pi === myPlayerIdx;
+  return `<div class="hole-input-wrap">${Array.from({length:18}, (_,h) => {
+    const g = hs[h] !== undefined ? hs[h] : '';
+    const cls = scoreClass(g, par[h]);
+    const dots = strokes[h] > 0 ? Array(strokes[h]).fill('<span class="h-dot"></span>').join('') : '';
+    return `<div class="h-cell">
+      <span class="h-num">${h+1}</span>
+      <span class="h-dots">${dots}</span>
+      <input class="h-inp ${cls}" type="number" min="1" max="15" value="${g}"
+        ${!isMe ? 'disabled title="You can only edit your own scores"' : ''}
+        oninput="setHS(${r},${pi},${h},this.value);this.className='h-inp '+scoreClass(this.value,${par[h]})">
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// ═══════════════════════════════════════════════
+//  SCORE ENTRY
+// ═══════════════════════════════════════════════
+function setHS(r, pi, h, val) {
+  if (pi !== myPlayerIdx) return; // guard — only edit own scores
+  if (!S.holeScores[r]) S.holeScores[r] = Array(8).fill(null).map(() => ({}));
+  if (!S.holeScores[r][pi]) S.holeScores[r][pi] = {};
+  S.holeScores[r][pi][h] = val === '' ? '' : parseInt(val);
+  dbSave(); // debounced — fires 800ms after last keystroke
+}
+
+// ═══════════════════════════════════════════════
+//  SCORING RENDER
+// ═══════════════════════════════════════════════
+function renderScoring() {
+  const r = currentRound, fmt = S.formats[r];
+  const dotLegend = `<span style="display:inline-flex;align-items:center;gap:3px;"><span class="h-dot"></span><span style="font-size:9px;color:var(--gold)">= hdcp stroke</span></span>`;
+
+  let html = `<div class="round-tabs">${COURSES.map((c,i) => `
+    <div class="round-tab ${i===r?'active':''}" onclick="currentRound=${i};renderScoring()">
+      <div class="round-tab-r">Round ${i+1}</div>
+      <div class="round-tab-name">${c.name.length>14?c.name.substr(0,13)+'…':c.name}</div>
+      <div class="round-tab-fmt ${S.formats[i]==='fun'?'style=color:var(--pur-ac)':''}">${FORMAT_LABELS[S.formats[i]]}</div>
+    </div>`).join('')}</div>`;
+
+  if (myPlayerIdx === null) {
+    html += `<div class="alert">👆 Tap your name in the header to select who you are before entering scores.</div>`;
+    document.getElementById('scoringContent').innerHTML = html;
+    return;
+  }
+
+  if (fmt === 'fun') {
+    html += `<div class="card"><div class="card-hdr"><div class="card-title" style="color:var(--pur-ac);">🍺 Founders Club — Fun Round</div></div>
+      <div class="card-body"><p style="font-size:13px;color:rgba(255,255,255,.7);">No competition points — enjoy the send-off round!</p>
+      <div style="text-align:center;margin-top:16px;font-size:36px;">🏌️‍♂️🍺🏆</div></div></div>`;
+    document.getElementById('scoringContent').innerHTML = html;
+    return;
+  }
+
+  if (fmt === 'scramble') {
+    // Find my team
+    const myTeamIdx = S.teams[r].findIndex(t => t.players.includes(myPlayerIdx));
+    html += `<div class="card"><div class="card-hdr">
+      <div class="card-title">My Scores &amp; Team</div>
+      <span style="font-size:11px;color:var(--muted);">${dotLegend}</span>
+    </div><div class="card-body" style="overflow-x:auto;"><table class="stbl">
+    <thead><tr><th>Player</th><th>Hole Scores</th><th>Net</th></tr></thead><tbody>`;
+    S.teams[r].forEach((team, ti) => {
+      team.players.forEach(pi => {
+        const net = playerNetTotal(pi, r);
+        const isMe = pi === myPlayerIdx;
+        html += `<tr class="${isMe?'my-row':''}"><td><div class="pname-cell">
+          <span class="team-badge ${TCOLORS[ti]}" style="font-size:9px;padding:2px 5px;">${TNAMES[ti]}</span>
+          <div class="avatar">${PLAYER_NAMES[pi][0]}</div>
+          <span style="font-size:11px;">${PLAYER_NAMES[pi]}${isMe?'<span class="me-chip">YOU</span>':''}</span>
+        </div></td>
+        <td>${holeInputsRow(r, pi)}</td>
+        <td class="net-cell">${net !== null ? net : '—'}</td></tr>`;
+      });
+    });
+    html += `</tbody></table></div></div>`;
+
+    // Team summary
+    html += `<div class="card"><div class="card-hdr"><div class="card-title">Team Net Scores</div></div><div class="card-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Best gross per hole between partners, minus handicap allowance.</p>`;
+    S.teams[r].forEach((team, ti) => {
+      const allow = scrambleTeamHcp(team.players);
+      let gross = 0, holesIn = 0;
+      for (let h = 0; h < 18; h++) {
+        const scores = team.players.map(pi => {
+          const g = S.holeScores[r][pi]?.[h];
+          return (g !== undefined && g !== '') ? parseInt(g) : null;
+        }).filter(s => s !== null);
+        if (scores.length) { gross += Math.min(...scores); holesIn++; }
+      }
+      const netVal = holesIn > 0 ? gross - allow : null;
+      const isMyTeam = team.players.includes(myPlayerIdx);
+      html += `<div style="margin-bottom:10px;background:${isMyTeam?'rgba(201,168,76,.07)':'rgba(255,255,255,.03)'};border:1px solid ${isMyTeam?'rgba(201,168,76,.25)':'var(--border)'};border-radius:8px;padding:10px 12px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap;">
+          <span class="team-badge ${TCOLORS[ti]}">${TNAMES[ti]}${isMyTeam?' ← YOU':''}</span>
+          <span style="font-size:12px;">${team.players.map(pi=>PLAYER_NAMES[pi]).join(' & ')}</span>
+          <span style="margin-left:auto;font-size:11px;color:var(--muted);">Allow: ${allow} · ${holesIn}/18</span>
+        </div>
+        <div style="display:flex;gap:20px;">
+          <div><div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;">Gross</div>
+            <div style="font-family:'Roboto Mono',monospace;font-size:16px;font-weight:700;">${holesIn>0?gross:'—'}</div></div>
+          <div><div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;">Net</div>
+            <div style="font-family:'Roboto Mono',monospace;font-size:16px;font-weight:700;color:var(--green-lt);">${netVal!==null?netVal:'—'}</div></div>
+        </div>
+      </div>`;
+    });
+    html += `</div></div>`;
+
+  } else if (fmt === 'bestball') {
+    function bbTeamNet(ti) {
+      let tot = 0, holes = 0;
+      for (let h = 0; h < 18; h++) {
+        const hNets = S.teams[r][ti].players.map(pi => {
+          const g = S.holeScores[r][pi]?.[h];
+          return (g !== undefined && g !== '') ? netScore(parseInt(g), strokesPerHole(pi,r)[h]) : null;
+        }).filter(n => n !== null);
+        if (hNets.length) { tot += Math.min(...hNets); holes++; }
+      }
+      return holes === 0 ? null : tot;
+    }
+
+    html += `<div class="card"><div class="card-hdr">
+      <div class="card-title">4-Man Best Ball · Scores</div>
+      <span style="font-size:11px;color:var(--muted);">${dotLegend}</span>
+    </div><div class="card-body" style="overflow-x:auto;"><table class="stbl">
+    <thead><tr><th>Player</th><th>Hole Scores</th><th>Net</th></tr></thead><tbody>`;
+    S.teams[r].forEach((team, ti) => {
+      team.players.forEach(pi => {
+        const net = playerNetTotal(pi, r);
+        const isMe = pi === myPlayerIdx;
+        html += `<tr class="${isMe?'my-row':''}"><td><div class="pname-cell">
+          <span class="team-badge ${BBCOLORS[ti]}" style="font-size:9px;padding:2px 5px;">${BBNAMES[ti]}</span>
+          <div class="avatar">${PLAYER_NAMES[pi][0]}</div>
+          <span style="font-size:11px;">${PLAYER_NAMES[pi]}${isMe?'<span class="me-chip">YOU</span>':''}</span>
+        </div></td>
+        <td>${holeInputsRow(r, pi)}</td>
+        <td class="net-cell">${net !== null ? net : '—'}</td></tr>`;
+      });
+    });
+    html += `</tbody></table></div></div>`;
+
+    // Match result
+    const tA = bbTeamNet(0), tB = bbTeamNet(1);
+    let result = '', ptsA = 0, ptsB = 0;
+    if (tA !== null && tB !== null) {
+      if (tA < tB) { result = 'Team A leads'; ptsA = BB_PTS.win; ptsB = BB_PTS.lose; }
+      else if (tB < tA) { result = 'Team B leads'; ptsA = BB_PTS.lose; ptsB = BB_PTS.win; }
+      else { result = 'All square'; ptsA = ptsB = BB_PTS.tie; }
+    }
+    const myTeamInBB = S.teams[r].findIndex(t => t.players.includes(myPlayerIdx));
+    html += `<div class="card"><div class="card-hdr"><div class="card-title">Match Result</div>${result?`<span style="font-size:13px;font-weight:700;color:var(--gold-lt);">${result}</span>`:''}</div>
+      <div class="card-body">`;
+    if (tA === null && tB === null) {
+      html += `<div class="alert" style="margin:0">Enter scores above to see the match result.</div>`;
+    } else {
+      [0,1].forEach(ti => {
+        const tNet = ti===0?tA:tB, pts = ti===0?ptsA:ptsB;
+        const isWin = (ti===0&&tA!==null&&tB!==null&&tA<tB)||(ti===1&&tA!==null&&tB!==null&&tB<tA);
+        const isTie = tA===tB&&tA!==null;
+        const isMyTeam = S.teams[r][ti].players.includes(myPlayerIdx);
+        html += `<div style="margin-bottom:10px;background:${isWin?'rgba(58,125,82,.18)':isTie?'rgba(201,168,76,.06)':'rgba(255,255,255,.03)'};border:1px solid ${isWin?'rgba(58,125,82,.4)':isTie?'rgba(201,168,76,.2)':'var(--border)'};border-radius:8px;padding:11px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap;">
+            <span class="team-badge ${BBCOLORS[ti]}">${BBNAMES[ti]}${isMyTeam?' ← YOU':''}</span>
+            <span style="font-size:12px;">${S.teams[r][ti].players.map(pi=>PLAYER_NAMES[pi]).join(' & ')}</span>
+            ${isWin?'<span style="margin-left:auto;font-size:16px;">🏆</span>':isTie?'<span style="margin-left:auto;color:var(--gold)">TIE</span>':''}
+          </div>
+          <div style="display:flex;gap:20px;">
+            <div><div style="font-size:10px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;">Team Net</div>
+              <div style="font-family:'Roboto Mono',monospace;font-size:18px;font-weight:700;">${tNet!==null?tNet:'—'}</div></div>
+            <div><div style="font-size:10px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;">Trip Pts</div>
+              <div style="font-family:'Roboto Mono',monospace;font-size:18px;font-weight:700;color:var(--gold);">${tNet!==null?pts+' ea':'—'}</div></div>
+          </div>
+        </div>`;
+      });
+    }
+    html += `</div></div>`;
+
+  } else { // stroke
+    html += `<div class="card"><div class="card-hdr">
+      <div class="card-title">Stroke Play · Your Scorecard</div>
+      <span style="font-size:11px;color:var(--muted);">${dotLegend}</span>
+    </div><div class="card-body" style="overflow-x:auto;"><table class="stbl">
+    <thead><tr><th>Player</th><th>Hole Scores</th><th>Net</th></tr></thead><tbody>`;
+    PLAYER_NAMES.forEach((_, pi) => {
+      const net = playerNetTotal(pi, r);
+      const isMe = pi === myPlayerIdx;
+      html += `<tr class="${isMe?'my-row':''}"><td><div class="pname-cell">
+        <div class="avatar">${PLAYER_NAMES[pi][0]}</div>
+        <span style="font-size:11px;">${PLAYER_NAMES[pi]}${isMe?'<span class="me-chip">YOU</span>':''}</span>
+      </div></td>
+      <td>${holeInputsRow(r, pi)}</td>
+      <td class="net-cell">${net !== null ? net : '—'}</td></tr>`;
+    });
+    html += `</tbody></table></div></div>`;
+
+    // Live leaderboard
+    const ranked = PLAYER_NAMES.map((_,pi) => ({pi, net:playerNetTotal(pi,r)}))
+      .filter(x => x.net !== null).sort((a,b) => a.net - b.net);
+    html += `<div class="card"><div class="card-hdr"><div class="card-title">Live Leaderboard</div>
+      <span style="font-size:11px;color:var(--green-lt);"><span class="live-dot"></span>Updates as scores come in</span></div>
+      <div class="card-body" style="padding:8px 0 0;">`;
+    if (!ranked.length) {
+      html += `<div style="padding:12px;"><div class="alert" style="margin:0">Enter scores to see leaderboard.</div></div>`;
+    } else {
+      html += `<table class="lb-table"><thead><tr><th>#</th><th>Player</th><th>Gross</th><th>Net</th><th>Pts</th></tr></thead><tbody>`;
+      ranked.forEach(({pi, net}, i) => {
+        const rc = i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+        const sym = i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}`;
+        const gross = Object.values(S.holeScores[r][pi]||{}).filter(v=>v!=='').reduce((a,b)=>a+parseInt(b),0)||'—';
+        const isMe = pi === myPlayerIdx;
+        html += `<tr class="${i===0?'lb-row-1':''} ${isMe?'my-lb-row':''}">
+          <td class="lb-rank ${rc}">${sym}</td>
+          <td><div class="lb-name-cell"><div class="lb-av">${PLAYER_NAMES[pi][0]}</div>${PLAYER_NAMES[pi]}${isMe?'<span class="me-chip">YOU</span>':''}</div></td>
+          <td class="lb-rpt">${gross}</td>
+          <td style="font-family:'Roboto Mono',monospace;font-weight:700;font-size:14px;">${net}</td>
+          <td class="lb-pts" style="font-size:14px;">${STROKE_PTS[i]||0}</td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+    }
+    html += `</div></div>`;
+  }
+
+  document.getElementById('scoringContent').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+//  SKINS
+// ═══════════════════════════════════════════════
+function calcSkins(r) {
+  const skinsWon = {};
+  let carry = 0;
+  for (let h = 0; h < 18; h++) {
+    const hNet = PLAYER_NAMES.map((_,pi) => {
+      const g = S.holeScores[r][pi]?.[h];
+      return (g !== undefined && g !== '') ? netScore(parseInt(g), strokesPerHole(pi,r)[h]) : null;
+    });
+    const valid = hNet.filter(s => s !== null);
+    if (valid.length < 2) { carry++; continue; }
+    const minNet = Math.min(...valid);
+    const winners = hNet.reduce((acc,s,pi) => { if (s===minNet) acc.push(pi); return acc; }, []);
+    if (winners.length === 1) {
+      const w = winners[0];
+      if (!skinsWon[w]) skinsWon[w] = [];
+      skinsWon[w].push({hole: h+1, value: 1+carry});
+      carry = 0;
+    } else carry++;
+  }
+  return skinsWon;
+}
+
+function renderSkins() {
+  let html = '';
+  for (let r = 0; r < 3; r++) {
+    const sw = calcSkins(r);
+    const hasData = PLAYER_NAMES.some((_,pi) => { const hs=S.holeScores[r][pi]; return hs&&Object.values(hs).some(v=>v!==''); });
+    html += `<div class="card"><div class="card-hdr"><div class="card-title">Round ${r+1} · ${COURSES[r].name}</div></div>`;
+    if (!hasData) {
+      html += `<div class="card-body"><div class="alert" style="margin:0">No scores yet.</div></div>`;
+    } else {
+      html += `<div class="card-body" style="padding:9px 11px;overflow-x:auto;"><table class="lb-table">
+        <thead><tr><th>#</th><th>Player</th><th>Skins</th><th>Pts</th><th>Holes Won</th></tr></thead><tbody>`;
+      PLAYER_NAMES.map((_,pi) => ({
+        pi, skins: sw[pi]?sw[pi].reduce((a,s)=>a+s.value,0):0, holes: sw[pi]||[]
+      })).sort((a,b) => b.skins-a.skins).forEach(({pi,skins,holes},i) => {
+        const rc = i===0&&skins>0?'r1':i===1&&skins>0?'r2':i===2&&skins>0?'r3':'rn';
+        const isMe = pi === myPlayerIdx;
+        const chips = holes.length
+          ? holes.map(h=>`<span class="skin-chip">H${h.hole}${h.value>1?` ×${h.value}`:''}</span>`).join('')
+          : '<span style="color:var(--muted);font-size:11px;">—</span>';
+        html += `<tr class="${isMe?'my-lb-row':''}">
+          <td class="lb-rank ${rc}">${i+1}</td>
+          <td><div class="lb-name-cell"><div class="lb-av">${PLAYER_NAMES[pi][0]}</div>${PLAYER_NAMES[pi]}${isMe?'<span class="me-chip">YOU</span>':''}</div></td>
+          <td style="font-family:'Roboto Mono',monospace;font-size:13px;color:var(--gold-lt);">${skins>0?skins:'—'}</td>
+          <td class="lb-pts" style="font-size:14px;">${skins>0?skins*SKIN_PTS:'—'}</td>
+          <td>${chips}</td></tr>`;
+      });
+      html += `</tbody></table></div>`;
+    }
+    html += `</div>`;
+  }
+  html += `<div class="alert" style="margin-top:4px;">Round 4 (Founders) is a fun round — no skins.</div>`;
+  document.getElementById('skinsContent').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+//  STANDINGS
+// ═══════════════════════════════════════════════
+function calcRoundPts(r) {
+  const fmt = S.formats[r], pts = Array(8).fill(0);
+  if (fmt === 'fun') return pts;
+  if (fmt === 'scramble') {
+    const nets = S.teams[r].map((_,ti) => scrambleTeamNetTotal(r,ti));
+    if (!nets.some(n=>n!==null)) return pts;
+    [...nets.map((n,i)=>({n,i})).filter(x=>x.n!==null)].sort((a,b)=>a.n-b.n)
+      .forEach(({i},rank) => S.teams[r][i].players.forEach(pi => { pts[pi]=SCRAMBLE_PTS[rank]||0; }));
+  } else if (fmt === 'bestball') {
+    const hasAny = PLAYER_NAMES.some((_,pi) => { const hs=S.holeScores[r][pi]; return hs&&Object.values(hs).some(v=>v!==''); });
+    if (!hasAny) return pts;
+    const tNets = S.teams[r].map(team => {
+      let tot = 0;
+      for (let h = 0; h < 18; h++) {
+        const hNets = team.players.map(pi => {
+          const g = S.holeScores[r][pi]?.[h];
+          return (g!==undefined&&g!=='') ? netScore(parseInt(g),strokesPerHole(pi,r)[h]) : null;
+        }).filter(n=>n!==null);
+        if (hNets.length) tot += Math.min(...hNets);
+      }
+      return tot;
+    });
+    if (tNets[0]<tNets[1])      { S.teams[r][0].players.forEach(pi=>pts[pi]=BB_PTS.win); S.teams[r][1].players.forEach(pi=>pts[pi]=BB_PTS.lose); }
+    else if (tNets[1]<tNets[0]) { S.teams[r][1].players.forEach(pi=>pts[pi]=BB_PTS.win); S.teams[r][0].players.forEach(pi=>pts[pi]=BB_PTS.lose); }
+    else PLAYER_NAMES.forEach((_,pi) => pts[pi]=BB_PTS.tie);
+  } else {
+    const nets = PLAYER_NAMES.map((_,pi) => playerNetTotal(pi,r));
+    if (!nets.some(n=>n!==null)) return pts;
+    [...nets.map((n,pi)=>({n,pi})).filter(x=>x.n!==null)].sort((a,b)=>a.n-b.n)
+      .forEach(({pi},rank) => { pts[pi]=STROKE_PTS[rank]||0; });
+  }
+  return pts;
+}
+function calcSkinsPts(r) {
+  if (S.formats[r]==='fun') return Array(8).fill(0);
+  const sw = calcSkins(r);
+  return PLAYER_NAMES.map((_,pi) => (sw[pi]?sw[pi].reduce((a,s)=>a+s.value,0):0)*SKIN_PTS);
+}
+
+function renderStandings() {
+  const rPts = [0,1,2,3].map(r=>calcRoundPts(r));
+  const sPts = [0,1,2,3].map(r=>calcSkinsPts(r));
+  const totals = PLAYER_NAMES.map((p,pi) => {
+    const rp=rPts.map(rr=>rr[pi]), sp=sPts.map(ss=>ss[pi]);
+    return {pi, name:p, rp, sp, total:rp.reduce((a,b)=>a+b,0)+sp.reduce((a,b)=>a+b,0)};
+  }).sort((a,b) => b.total-a.total);
+
+  if (!totals.some(t=>t.total>0)) {
+    document.getElementById('standingsContent').innerHTML = '<div class="alert">No scores yet — standings update live as scores come in.</div>';
+    return;
+  }
+
+  let html = `<div class="card"><div class="card-hdr"><div class="card-title">🏆 Trip Standings</div>
+    <span style="font-size:11px;color:var(--green-lt);"><span class="live-dot"></span>Live</span></div>
+    <div class="card-body" style="padding:8px 0 0;overflow-x:auto;"><table class="lb-table">
+    <thead><tr><th>#</th><th>Player</th>
+      <th>R1<br><span style="font-size:8px;color:var(--muted)">+sk</span></th>
+      <th>R2<br><span style="font-size:8px;color:var(--muted)">+sk</span></th>
+      <th>R3<br><span style="font-size:8px;color:var(--muted)">+sk</span></th>
+      <th>R4</th><th>Total</th></tr></thead><tbody>`;
+  totals.forEach(({pi,name,rp,sp,total},i) => {
+    const rc = i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+    const sym = i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}`;
+    const isMe = myPlayerIdx === pi;
+    html += `<tr class="${i===0?'lb-row-1':''} ${isMe?'my-lb-row':''}">
+      <td class="lb-rank ${rc}">${sym}</td>
+      <td><div class="lb-name-cell"><div class="lb-av">${name[0]}</div>${name}${isMe?'<span class="me-chip">YOU</span>':''}</div></td>
+      ${[0,1,2].map(r=>`<td><span class="lb-rpt">${rp[r]||0}</span>${sp[r]>0?`<span style="color:var(--gold);font-size:10px;margin-left:2px;">+${sp[r]}</span>`:''}</td>`).join('')}
+      <td><span style="font-size:14px;">🍺</span></td>
+      <td class="lb-pts">${total}</td></tr>`;
+  });
+  html += `</tbody></table></div></div>`;
+
+  for (let r = 0; r < 3; r++) {
+    const fmt = S.formats[r];
+    const hasData = PLAYER_NAMES.some((_,pi) => { const hs=S.holeScores[r][pi]; return hs&&Object.values(hs).some(v=>v!==''); });
+    if (!hasData) continue;
+    const rptArr=calcRoundPts(r), spArr=calcSkinsPts(r);
+    html += `<div class="card"><div class="card-hdr">
+      <div class="card-title" style="font-size:13px;">Round ${r+1} · ${COURSES[r].name}</div>
+      <span style="font-size:11px;color:var(--muted)">${FORMAT_LABELS[fmt]}</span></div>
+      <div class="card-body" style="padding:8px 0 0;overflow-x:auto;"><table class="lb-table">
+      <thead><tr><th>#</th><th>Player</th><th>Net</th><th>Pts</th><th>Skins</th></tr></thead><tbody>`;
+    if (fmt === 'scramble') {
+      S.teams[r].map((_,ti)=>({net:scrambleTeamNetTotal(r,ti),ti})).filter(x=>x.net!==null)
+        .sort((a,b)=>a.net-b.net).forEach(({net,ti},rank) => {
+          html += `<tr><td class="lb-rank ${rank===0?'r1':rank===1?'r2':rank===2?'r3':'rn'}">${rank+1}</td>
+            <td><span class="team-badge ${TCOLORS[ti]}">${TNAMES[ti]}</span> <span style="font-size:11px;color:var(--muted)">${S.teams[r][ti].players.map(pi=>PLAYER_NAMES[pi]).join(' & ')}</span></td>
+            <td class="lb-rpt">${net}</td><td class="lb-rpt">${SCRAMBLE_PTS[rank]||0} ea</td>
+            <td style="font-size:12px;color:var(--gold-lt);">${S.teams[r][ti].players.map(pi=>spArr[pi]>0?`${PLAYER_NAMES[pi].split(' ')[0]}:${spArr[pi]}`:'').filter(Boolean).join(', ')||'—'}</td></tr>`;
+        });
+    } else {
+      [...PLAYER_NAMES.map((_,pi)=>({pi,net:playerNetTotal(pi,r),rpt:rptArr[pi],sp:spArr[pi]}))
+        .filter(x=>x.net!==null)].sort((a,b)=>a.net-b.net).forEach(({pi,net,rpt,sp},i) => {
+          const isMe = pi === myPlayerIdx;
+          html += `<tr class="${isMe?'my-lb-row':''}">
+            <td class="lb-rank ${i===0?'r1':i===1?'r2':i===2?'r3':'rn'}">${i+1}</td>
+            <td><div class="lb-name-cell"><div class="lb-av">${PLAYER_NAMES[pi][0]}</div>${PLAYER_NAMES[pi]}${isMe?'<span class="me-chip">YOU</span>':''}</div></td>
+            <td class="lb-rpt">${net}</td><td class="lb-rpt">${rpt}</td>
+            <td style="font-family:'Roboto Mono',monospace;font-size:13px;color:var(--gold-lt);">${sp>0?sp:'—'}</td></tr>`;
+        });
+    }
+    html += `</tbody></table></div></div>`;
+  }
+  document.getElementById('standingsContent').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+//  SETUP TAB
+// ═══════════════════════════════════════════════
+function renderSetupTab() {
+  // Players table (read-only for all, editable only by admin)
+  document.getElementById('playerTable').innerHTML =
+    `<thead><tr><th>#</th><th style="width:100%">Name</th><th style="text-align:center">Hdcp</th></tr></thead><tbody>` +
+    PLAYER_NAMES.map((p,i) => `<tr>
+      <td><span class="pi-num">${i+1}</span></td>
+      <td style="font-size:13px;font-weight:600;">${p}${i===myPlayerIdx?'<span class="me-chip">YOU</span>':''}</td>
+      <td style="text-align:center;font-family:'Roboto Mono',monospace;font-size:13px;color:${S.handicaps[i]!==null?'var(--white)':'var(--muted)'};">
+        ${S.handicaps[i] !== null ? S.handicaps[i] : 'TBD'}
+      </td>
+    </tr>`).join('') + '</tbody>';
+
+  // Teams
+  const teamsBody = document.getElementById('teamsBody');
+  if (!S.teamsGenerated || !allHandicapsSet()) {
+    teamsBody.innerHTML = `<div class="alert" style="margin:0">${allHandicapsSet()?'Teams pending admin generation.':'Handicaps not yet entered. Jacob G will set these up.'}</div>`;
+  } else {
+    let th = '';
+    // Scramble teams
+    th += `<div style="margin-bottom:12px;"><div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">Round 1 · Scramble Teams</div>`;
+    S.teams[0].forEach((team, ti) => {
+      const allow = scrambleTeamHcp(team.players);
+      const hasMe = team.players.includes(myPlayerIdx);
+      th += `<div style="display:flex;align-items:center;gap:8px;background:${hasMe?'rgba(201,168,76,.07)':'rgba(255,255,255,.03)'};border:1px solid ${hasMe?'rgba(201,168,76,.2)':'var(--border)'};border-radius:7px;padding:9px 11px;margin-bottom:6px;flex-wrap:wrap;">
+        <span class="team-badge ${TCOLORS[ti]}">${TNAMES[ti]}</span>
+        <span style="font-size:13px;">${team.players.map(pi=>PLAYER_NAMES[pi]).join(' &amp; ')}</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--muted);">Allow: ${allow}</span>
+      </div>`;
+    });
+    th += `</div>`;
+    // Best Ball teams
+    th += `<div><div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">Round 2 · Best Ball Teams</div>`;
+    S.teams[1].forEach((team, ti) => {
+      const hasMe = team.players.includes(myPlayerIdx);
+      th += `<div style="display:flex;align-items:center;gap:8px;background:${hasMe?'rgba(201,168,76,.07)':'rgba(255,255,255,.03)'};border:1px solid ${hasMe?'rgba(201,168,76,.2)':'var(--border)'};border-radius:7px;padding:9px 11px;margin-bottom:6px;flex-wrap:wrap;">
+        <span class="team-badge ${BBCOLORS[ti]}">${BBNAMES[ti]}</span>
+        <span style="font-size:13px;">${team.players.map(pi=>PLAYER_NAMES[pi]).join(' · ')}</span>
+      </div>`;
+    });
+    th += `</div>`;
+    teamsBody.innerHTML = th;
+  }
+
+  // Hole ratings
+  let hcpHtml = `<p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Pre-loaded from official scorecards. Par shown in gold · Hdcp rating below.</p>`;
+  COURSES.forEach((c,r) => {
+    hcpHtml += `<div style="margin-bottom:16px;">
+      <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:${r===3?'var(--pur-ac)':'var(--gold)'};margin-bottom:6px;">Round ${r+1} · ${c.name}</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Front 9</div>
+      <div class="hcp-hole-grid">${Array.from({length:9},(_,h)=>`<div class="hcp-hole-cell">
+        <span class="hcp-hole-num">${h+1}</span>
+        <span class="hcp-hole-par">p${c.par[h]}</span>
+        <span class="hcp-hole-val">${c.hcp[h]}</span>
+      </div>`).join('')}</div>
+      <div style="font-size:10px;color:var(--muted);margin:5px 0 4px;">Back 9</div>
+      <div class="hcp-hole-grid">${Array.from({length:9},(_,h)=>`<div class="hcp-hole-cell">
+        <span class="hcp-hole-num">${h+10}</span>
+        <span class="hcp-hole-par">p${c.par[h+9]}</span>
+        <span class="hcp-hole-val">${c.hcp[h+9]}</span>
+      </div>`).join('')}</div>
+    </div>`;
+  });
+  document.getElementById('holeHcpBody').innerHTML = hcpHtml;
+
+  // Admin button visibility
+  document.getElementById('adminBtn').style.display = myPlayerIdx === ADMIN_IDX ? 'block' : 'none';
+}
+
+// ═══════════════════════════════════════════════
+//  ADMIN
+// ═══════════════════════════════════════════════
+function showAdminModal() {
+  if (myPlayerIdx !== ADMIN_IDX) return;
+  const fields = document.getElementById('adminFields');
+  fields.innerHTML = PLAYER_NAMES.map((p,i) => `
+    <div class="setup-field">
+      <label>${p}${i===0?' (You)':''} — Handicap Index</label>
+      <input class="setup-input" type="number" min="0" max="36"
+        value="${S.handicaps[i]!==null?S.handicaps[i]:''}" placeholder="Enter index"
+        id="admin-hcp-${i}">
+    </div>`).join('');
+  document.getElementById('adminModal').style.display = 'flex';
+}
+
+async function saveAdminSetup() {
+  if (myPlayerIdx !== ADMIN_IDX) return;
+  const newHcps = PLAYER_NAMES.map((_,i) => {
+    const val = document.getElementById(`admin-hcp-${i}`).value;
+    return val === '' ? null : parseInt(val);
+  });
+  S.handicaps = newHcps;
+  if (newHcps.every(h => h !== null)) {
+    generateFairTeams();
+    toast('Handicaps saved — fair teams generated!');
+  } else {
+    toast('Handicaps saved — enter all 8 to generate teams.');
+  }
+  closeModal('adminModal');
+  await dbSave();
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+async function init() {
+  // Restore player identity from local storage
+  const saved = localStorage.getItem('myPlayerIdx');
+  if (saved !== null) {
+    myPlayerIdx = parseInt(saved);
+    updatePlayerPill();
+    document.getElementById('adminBtn').style.display = myPlayerIdx === ADMIN_IDX ? 'block' : 'none';
+  } else {
+    // Show modal after a short delay so page renders first
+    setTimeout(showPlayerModal, 600);
+  }
+
+  // Load from cloud
+  await dbLoad();
+
+  // Start polling for other players' updates
+  startPolling();
+
+  renderAll();
+}
+
+init();
+</script>
+</body>
+</html>
