@@ -1246,14 +1246,19 @@ async function init() {
     myPlayerIdx = parseInt(saved);
     updatePlayerPill();
     document.getElementById('adminBtn').style.display = myPlayerIdx === ADMIN_IDX ? 'block' : 'none';
-  } else {
-    setTimeout(showPlayerModal, 600);
   }
 
-  // Load initial state from Firebase
+  // Load initial state from Firebase FIRST so handicap data is current
   await dbLoad();
 
-  // Start real-time push sync — all devices update instantly when anyone saves
+  // Now check — show player select if identity unknown, or handicap prompt if hcp missing
+  if (myPlayerIdx === null) {
+    setTimeout(showPlayerModal, 400);
+  } else if (S.handicaps[myPlayerIdx] === null) {
+    setTimeout(() => showHcpPrompt(myPlayerIdx), 400);
+  }
+
+  // Start real-time push sync
   startRealtimeSync();
 
   renderAll();
