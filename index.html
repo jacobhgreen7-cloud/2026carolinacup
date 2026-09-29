@@ -180,6 +180,25 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--white);min-
 .toast.show{opacity:1;}
 .live-dot{width:7px;height:7px;border-radius:50%;background:var(--green-lt);display:inline-block;animation:pulse 2s infinite;margin-right:4px;}
 @media(max-width:400px){.h-inp{width:22px;font-size:10px;}.hcp-hole-val{width:22px;font-size:10px;}}
+/* FEED + NOTIFICATIONS */
+.feed-badge{background:var(--red);color:#fff;border-radius:10px;font-size:9px;padding:1px 5px;margin-left:2px;vertical-align:top;letter-spacing:0;}
+.feed-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;}
+.feed-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:7px;}
+.feed-title{font-family:'Playfair Display',serif;font-size:15px;color:var(--gold);}
+.feed-time{font-size:10px;color:var(--muted);white-space:nowrap;}
+.feed-msg{font-size:13px;line-height:1.6;color:rgba(255,255,255,.85);white-space:pre-wrap;}
+.feed-copy{margin-top:10px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--gold-lt);border-radius:6px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+.notif-step{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:rgba(255,255,255,.8);line-height:1.5;margin-bottom:8px;}
+.notif-step a{color:var(--gold-lt);}
+.notif-num{background:var(--gold);color:var(--bg);font-weight:700;font-size:11px;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.notif-topic{display:flex;justify-content:space-between;align-items:center;gap:8px;background:rgba(201,168,76,.1);border:1px dashed rgba(201,168,76,.45);border-radius:7px;padding:10px 12px;margin:2px 0 10px 29px;cursor:pointer;}
+.notif-topic code{font-family:'Roboto Mono',monospace;font-size:13px;color:var(--gold-lt);word-break:break-all;}
+.notif-topic span{font-size:10px;color:var(--muted);white-space:nowrap;}
+.banner{position:fixed;left:12px;right:12px;top:-200px;z-index:250;background:linear-gradient(135deg,#243b2e,#1c2e23);border:1px solid rgba(201,168,76,.5);border-radius:12px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.5);transition:top .35s ease;cursor:pointer;max-width:560px;margin:0 auto;}
+.banner.show{top:12px;}
+.banner-title{font-weight:700;font-size:14px;color:var(--gold-lt);margin-bottom:3px;}
+.banner-msg{font-size:12px;color:rgba(255,255,255,.85);line-height:1.4;}
+.banner-cta{font-size:10px;color:var(--muted);margin-top:5px;}
 </style>
 </head>
 <body>
@@ -249,6 +268,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--white);min-
   <button class="tab" onclick="showTab('scoring')">Scoring</button>
   <button class="tab" onclick="showTab('skins')">Skins</button>
   <button class="tab" onclick="showTab('standings')">Standings</button>
+  <button class="tab" onclick="showTab('feed')">Feed <span id="feedBadge" class="feed-badge" style="display:none;">0</span></button>
   <button class="tab" onclick="showTab('guide')">Guide</button>
 </div>
 
@@ -277,6 +297,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--white);min-
     </div>
   </div>
 
+  <div id="notifSetupSlot"></div>
+
   <div class="card">
     <div class="card-hdr"><div class="card-title">👥 Players &amp; Handicaps</div></div>
     <div class="card-body" style="padding:9px 12px;"><table class="players-table" id="playerTable"></table></div>
@@ -300,6 +322,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--white);min-
 <div id="tab-scoring" class="panel"><div id="scoringContent"><div class="alert">Loading…</div></div></div>
 <div id="tab-skins"    class="panel"><div id="skinsContent"><div class="alert">Loading…</div></div></div>
 <div id="tab-standings" class="panel"><div id="standingsContent"><div class="alert">Loading…</div></div></div>
+<div id="tab-feed" class="panel"><div id="feedContent"><div class="alert">Loading…</div></div></div>
 
 <div id="tab-guide" class="panel">
   <div class="guide-card">
@@ -404,6 +427,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--white);min-
 </div>
 
 <div class="toast" id="toast"></div>
+<div id="banner" class="banner" onclick="showTab('feed')">
+  <div id="bannerTitle" class="banner-title"></div>
+  <div id="bannerMsg" class="banner-msg"></div>
+  <div class="banner-cta">Tap to open the feed →</div>
+</div>
 
 <script>
 // ═══════════════════════════════════════════════
@@ -433,134 +461,614 @@ const TCOLORS=['ta','tb','tc','td'], TNAMES=['Team 1','Team 2','Team 3','Team 4'
 const BBCOLORS=['ta','tb'], BBNAMES=['Team A','Team B'];
 
 // ═══════════════════════════════════════════════
-//  FIREBASE CONFIG
+//  FIREBASE + NOTIFICATION CONFIG
 // ═══════════════════════════════════════════════
-const FB_URL = 'https://carolina-cup-default-rtdb.firebaseio.com/state.json';
+const FB_BASE    = 'https://carolina-cup-default-rtdb.firebaseio.com/state';
+const NTFY_TOPIC = 'carolina-cup-26-ipr9guva';
+const APP_URL    = location.origin + location.pathname;
+
+function makeId(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+let DEVICE_ID;
+try { DEVICE_ID = localStorage.getItem('ccDeviceId'); if (!DEVICE_ID) { DEVICE_ID = makeId(); localStorage.setItem('ccDeviceId', DEVICE_ID); } }
+catch(e) { DEVICE_ID = makeId(); }
 
 // ═══════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════
 let myPlayerIdx = null;
 let currentRound = 0;
-let saveTimer = null;
 let fbListener = null;
-let lastSyncHash = '';
+let loadedOnce = false;
+let remote = {};                 // mirror of what's in Firebase
+let pending = {};                // local writes not yet confirmed by Firebase: path -> value
+try { pending = JSON.parse(localStorage.getItem('ccPending') || '{}') || {}; } catch(e) { pending = {}; }
+let flushTimer = null, retryTimer = null, flushing = false, renderQueued = false;
 
-// Shared state synced via Firebase
-let S = {
-  handicaps: [null,null,null,null,null,null,null,null],
-  teamsGenerated: false,
-  teams: [
+function defaultTeams() {
+  return [
     [{players:[0,1]},{players:[2,3]},{players:[4,5]},{players:[6,7]}],
     [{players:[0,1,2,3]},{players:[4,5,6,7]}],
     [],[]
-  ],
-  formats: ['scramble','bestball','stroke','fun'],
-  holeScores: Array(4).fill(null).map(()=>Array(8).fill(null).map(()=>({})))
-};
+  ];
+}
+
+// Firebase drops null/empty values and turns number-keyed objects into arrays.
+// Everything read from Firebase goes through normalize() so the app always sees
+// 8 handicap slots (null = not entered) and clean per-player score objects.
+function normNum(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const n = parseInt(v);
+  return isNaN(n) ? null : n;
+}
+function normScores(x) {
+  const o = {};
+  if (!x || typeof x !== 'object') return o;
+  for (const k in x) { const n = normNum(x[k]); if (n !== null && n > 0) o[k] = n; }
+  return o;
+}
+function normalize(rs) {
+  rs = (rs && typeof rs === 'object') ? rs : {};
+  const def = defaultTeams();
+  const t = rs.teams || {};
+  const teams = [0,1,2,3].map(r => {
+    const tr = t[r];
+    if (!tr) return def[r];
+    const arr = Object.values(tr).filter(x => x && x.players)
+      .map(x => ({ players: Object.values(x.players).map(Number) }));
+    return arr.length ? arr : def[r];
+  });
+  return {
+    handicaps: Array.from({length:8}, (_,i) => normNum(rs.handicaps ? rs.handicaps[i] : null)),
+    teamsGenerated: rs.teamsGenerated === true,
+    teams,
+    formats: ['scramble','bestball','stroke','fun'],
+    holeScores: Array.from({length:4}, (_,r) => Array.from({length:8}, (_,pi) =>
+      normScores(rs.holeScores && rs.holeScores[r] ? rs.holeScores[r][pi] : null))),
+    notifs: (rs.notifs && typeof rs.notifs === 'object') ? rs.notifs : {}
+  };
+}
+
+let S = normalize({});
+
+function setPath(obj, path, value) {
+  const parts = String(path).split('/').filter(Boolean);
+  if (!parts.length) return;
+  let o = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    const k = parts[i];
+    if (o[k] === null || typeof o[k] !== 'object') o[k] = {};
+    o = o[k];
+  }
+  const last = parts[parts.length - 1];
+  if (value === null || value === undefined) {
+    if (Array.isArray(o)) o[last] = null; else delete o[last];
+  } else {
+    o[last] = value;
+  }
+}
+
+// Remote data + any unsent local edits layered on top = what the app shows
+function applyRemote() {
+  const base = JSON.parse(JSON.stringify(remote || {}));
+  for (const p in pending) setPath(base, p, JSON.parse(JSON.stringify(pending[p])));
+  S = normalize(base);
+}
 
 // ═══════════════════════════════════════════════
-//  SYNC — Firebase REST + SSE streaming
+//  SYNC — each player writes only their own data
 // ═══════════════════════════════════════════════
 function setSyncStatus(state, label) {
   const bar = document.getElementById('syncBar');
   const dot = document.getElementById('syncDot');
   const lbl = document.getElementById('syncLabel');
-  bar.className = state;
-  dot.className = 'sync-dot' + (state === 'syncing' ? ' pending' : state === 'err' ? ' err' : '');
+  if (bar) bar.className = state;
+  if (dot) dot.className = 'sync-dot' + (state === 'syncing' ? ' pending' : state === 'err' ? ' err' : '');
   if (lbl) lbl.textContent = label;
 }
+function pendingCount() { return Object.keys(pending).length; }
+function persistPending() { try { localStorage.setItem('ccPending', JSON.stringify(pending)); } catch(e) {} }
 
-function mergeRemote(remote) {
-  if (!remote) return;
-  if (remote.handicaps)                S.handicaps       = remote.handicaps;
-  if (remote.teamsGenerated !== undefined) S.teamsGenerated = remote.teamsGenerated;
-  if (remote.teams)                    S.teams           = remote.teams;
-  if (remote.formats)                  S.formats         = remote.formats;
-  if (remote.holeScores) {
-    for (let r = 0; r < 4; r++) {
-      for (let pi = 0; pi < 8; pi++) {
-        // Remote always wins for other players; local wins for my own scores
-        if (pi !== myPlayerIdx) {
-          S.holeScores[r][pi] = remote.holeScores[r]?.[pi] || {};
-        }
-      }
-    }
+function queueWrite(path, value) {
+  // A parent write replaces any queued child writes
+  for (const k of Object.keys(pending)) if (k.startsWith(path + '/')) delete pending[k];
+  pending[path] = value;
+  persistPending();
+  scheduleFlush(600);
+}
+function scheduleFlush(ms) { clearTimeout(flushTimer); flushTimer = setTimeout(flush, ms); }
+
+async function flush() {
+  if (flushing) { scheduleFlush(500); return; }
+  const paths = Object.keys(pending);
+  if (!paths.length) return;
+  flushing = true;
+  setSyncStatus('syncing', 'Saving…');
+  let failed = false;
+  for (const p of paths) {
+    const val = pending[p];
+    const body = JSON.stringify(val === undefined ? null : val);
+    try {
+      const res = await fetch(`${FB_BASE}/${p}.json`, { method: 'PUT', body });
+      if (!res.ok) throw new Error(res.status);
+      if (JSON.stringify(pending[p]) === body) delete pending[p];
+      setPath(remote, p, val);
+    } catch(e) { failed = true; break; }
+  }
+  persistPending();
+  flushing = false;
+  if (failed) {
+    const n = pendingCount();
+    setSyncStatus('err', `No signal — ${n} change${n !== 1 ? 's' : ''} held on this phone, retrying…`);
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(flush, 5000);
+  } else if (pendingCount()) {
+    scheduleFlush(300);
+  } else {
+    setSyncStatus('ok', 'Saved ✓');
+    setTimeout(() => { if (!pendingCount()) setSyncStatus('', 'Live ●'); }, 1500);
+    checkMilestones();
   }
 }
 
 async function dbLoad() {
-  setSyncStatus('syncing', 'Loading…');
   try {
-    const res = await fetch(FB_URL);
+    const res = await fetch(`${FB_BASE}.json`);
     if (!res.ok) throw new Error(res.status);
-    const remote = await res.json();
-    const hash = JSON.stringify(remote);
-    if (hash !== lastSyncHash) {
-      lastSyncHash = hash;
-      mergeRemote(remote);
-      renderAll();
-    }
-    setSyncStatus('ok', 'Live ●');
-    setTimeout(() => setSyncStatus('', 'Live ●'), 800);
+    remote = (await res.json()) || {};
+    applyRemote();
+    loadedOnce = true;
+    scheduleRender();
+    checkNewFeed();
+    checkMilestones();
+    if (!pendingCount()) setSyncStatus('', 'Live ●');
+    return true;
   } catch(e) {
-    setSyncStatus('err', 'Offline — check connection');
-    console.warn('Firebase load error:', e);
+    if (!loadedOnce) setSyncStatus('err', 'Offline — check connection');
+    return false;
   }
 }
 
-async function dbSave() {
-  if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(async () => {
-    setSyncStatus('syncing', 'Saving…');
-    try {
-      const res = await fetch(FB_URL, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(S)
-      });
-      if (!res.ok) throw new Error(res.status);
-      const saved = await res.json();
-      lastSyncHash = JSON.stringify(saved);
-      setSyncStatus('ok', 'Saved ✓');
-      setTimeout(() => setSyncStatus('', 'Live ●'), 1500);
-    } catch(e) {
-      setSyncStatus('err', 'Save failed — check connection');
-      console.warn('Firebase save error:', e);
-    }
-  }, 600);
-}
-
-// Firebase SSE streaming — push updates to all devices instantly
+// Firebase pushes every change to every open phone instantly
 function startRealtimeSync() {
-  if (fbListener) fbListener.close();
+  if (fbListener) { try { fbListener.close(); } catch(e) {} }
+  if (typeof EventSource === 'undefined') return;
+  fbListener = new EventSource(`${FB_BASE}.json`);
+  const handle = kind => e => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (!msg) return;
+      const path = msg.path || '/';
+      if (kind === 'put') {
+        if (path === '/') remote = msg.data || {};
+        else { if (!remote || typeof remote !== 'object') remote = {}; setPath(remote, path, msg.data); }
+      } else {
+        const d = msg.data || {};
+        for (const k in d) setPath(remote, (path === '/' ? '' : path) + '/' + k, d[k]);
+      }
+      applyRemote();
+      loadedOnce = true;
+      scheduleRender();
+      checkNewFeed();
+      checkMilestones();
+      if (!pendingCount()) setSyncStatus('', 'Live ●');
+    } catch(err) {}
+  };
+  fbListener.addEventListener('put', handle('put'));
+  fbListener.addEventListener('patch', handle('patch'));
+  fbListener.onerror = () => { if (!pendingCount()) setSyncStatus('err', 'Reconnecting…'); };
+  fbListener.onopen  = () => { if (!pendingCount()) setSyncStatus('', 'Live ●'); flush(); };
+}
+
+// Don't redraw the scorecard while someone is mid-entry
+function isTyping() {
+  const a = document.activeElement;
+  return !!(a && a.classList && a.classList.contains('h-inp'));
+}
+function scheduleRender() {
+  if (isTyping()) { renderQueued = true; return; }
+  renderQueued = false;
+  renderAll();
+}
+document.addEventListener('focusout', () => setTimeout(() => { if (renderQueued && !isTyping()) scheduleRender(); }, 400));
+
+// ═══════════════════════════════════════════════
+//  NOTIFICATIONS — ntfy push + in-app feed
+// ═══════════════════════════════════════════════
+const claimsInFlight = new Set();
+const claimsDone = new Set();
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let milestoneTimer = null;
+
+async function sendPush(p) {
   try {
-    const streamURL = 'https://carolina-cup-default-rtdb.firebaseio.com/state.json';
-    fbListener = new EventSource(streamURL + '?event=put');
-    fbListener.addEventListener('put', (e) => {
-      try {
-        const msg = JSON.parse(e.data);
-        if (!msg || !msg.data) return;
-        const remote = msg.path === '/' ? msg.data : null;
-        if (!remote) return;
-        const hash = JSON.stringify(remote);
-        if (hash === lastSyncHash) return;
-        lastSyncHash = hash;
-        mergeRemote(remote);
-        renderAll();
-        setSyncStatus('ok', 'Live ●');
-      } catch(err) { /* ignore parse errors */ }
+    await fetch('https://ntfy.sh/', {
+      method: 'POST',
+      body: JSON.stringify({
+        topic: NTFY_TOPIC, title: p.title, message: p.msg,
+        tags: p.tags || ['golf'], priority: p.priority || 3, click: APP_URL
+      })
     });
-    fbListener.onerror = () => {
-      setSyncStatus('err', 'Reconnecting…');
-      // EventSource auto-reconnects, so just update the label
-      setTimeout(() => setSyncStatus('', 'Live ●'), 3000);
-    };
-    fbListener.onopen = () => setSyncStatus('', 'Live ●');
+  } catch(e) {}
+}
+
+function hasNotif(k) { return !!(S.notifs && S.notifs[k]) || claimsDone.has(k) || claimsInFlight.has(k); }
+
+// Several phones may spot the same milestone at once. Each writes a claim,
+// waits, then re-reads: only the phone whose claim survived sends the push.
+async function claimAndSend(key, build) {
+  if (hasNotif(key)) return;
+  claimsInFlight.add(key);
+  try {
+    const url = `${FB_BASE}/notifs/${key}.json`;
+    let cur = await (await fetch(url)).json();
+    if (cur) { claimsDone.add(key); return; }
+    let payload = null;
+    try { payload = build(); } catch(e) { payload = null; }
+    if (!payload) payload = { silent: true };
+    const rec = Object.assign({}, payload, { by: DEVICE_ID, t: Date.now() });
+    const res = await fetch(url, { method: 'PUT', body: JSON.stringify(rec) });
+    if (!res.ok) return;
+    await sleep(1200 + Math.random() * 600);
+    cur = await (await fetch(url)).json();
+    claimsDone.add(key);
+    if (!cur || cur.by !== DEVICE_ID) return;
+    if (!rec.silent) await sendPush(rec);
   } catch(e) {
-    // SSE not supported — fall back to polling
-    setInterval(dbLoad, 8000);
+    // offline — will be retried on the next check
+  } finally {
+    claimsInFlight.delete(key);
   }
+}
+
+function checkMilestones() { clearTimeout(milestoneTimer); milestoneTimer = setTimeout(runMilestones, 1200); }
+
+function holeComplete(r, h) { return PLAYER_NAMES.every((_, pi) => S.holeScores[r][pi][h] !== undefined); }
+function holesCompleteThrough(r) { let n = 0; for (let h = 0; h < 18; h++) { if (holeComplete(r, h)) n = h + 1; else break; } return n; }
+
+function runMilestones() {
+  if (!loadedOnce || myPlayerIdx === null) return;
+
+  // Safety net: if all handicaps are in but teams never got written, write them
+  if (allHandicapsSet() && !S.teamsGenerated) {
+    generateFairTeams();
+    queueWrite('teams', S.teams);
+    queueWrite('teamsGenerated', true);
+  }
+  if (S.teamsGenerated && allHandicapsSet() && !hasNotif('teams')) claimAndSend('teams', buildTeamsMsg);
+
+  for (let r = 0; r < 3; r++) {
+    const thru = holesCompleteThrough(r);
+    if (!thru) continue;
+
+    // Hole alerts (holes 6, 12, 18 are covered by the bigger recap instead)
+    const due = [];
+    for (let h = 0; h < thru; h++) {
+      if ((h + 1) % 6 === 0) continue;
+      if (!hasNotif(`r${r}h${h+1}`)) due.push(h);
+    }
+    due.forEach((h, i) => {
+      const latest = (i === due.length - 1) && (h === thru - 1);
+      claimAndSend(`r${r}h${h+1}`, latest ? () => buildHoleMsg(r, h) : () => ({ silent: true }));
+    });
+
+    // Recaps every 6 holes — if several are due at once (bulk entry), only the newest sends
+    const segDue = [];
+    for (let s = 1; s <= 3; s++) if (thru >= s * 6 && !hasNotif(`r${r}s${s}`)) segDue.push(s);
+    segDue.forEach((s, i) => claimAndSend(`r${r}s${s}`, i === segDue.length - 1 ? () => buildSegmentMsg(r, s) : () => ({ silent: true })));
+  }
+}
+
+// ── In-app feed + banner ──
+function feedItems() {
+  return Object.entries(S.notifs || {})
+    .filter(([k, v]) => v && !v.silent && v.title)
+    .map(([k, v]) => Object.assign({ key: k }, v))
+    .sort((a, b) => (b.t || 0) - (a.t || 0));
+}
+let feedPrimed = false;
+function getSeen() { try { return new Set(JSON.parse(localStorage.getItem('ccSeen') || '[]')); } catch(e) { return new Set(); } }
+function setSeen(s) { try { localStorage.setItem('ccSeen', JSON.stringify([...s])); } catch(e) {} }
+function checkNewFeed() {
+  const items = feedItems();
+  const seen = getSeen();
+  if (!feedPrimed) {
+    feedPrimed = true;
+    if (!localStorage.getItem('ccSeenInit')) { items.forEach(i => seen.add(i.key)); setSeen(seen); try { localStorage.setItem('ccSeenInit', '1'); } catch(e) {} }
+  }
+  const fresh = items.filter(i => !seen.has(i.key));
+  if (fresh.length && document.getElementById('tab-feed') && !document.getElementById('tab-feed').classList.contains('active')) {
+    showBanner(fresh[0]);
+  }
+  updateFeedBadge();
+}
+function updateFeedBadge() {
+  const seen = getSeen();
+  const n = feedItems().filter(i => !seen.has(i.key)).length;
+  const b = document.getElementById('feedBadge');
+  if (b) { b.textContent = n; b.style.display = n ? 'inline-block' : 'none'; }
+}
+function markFeedSeen() {
+  const seen = getSeen();
+  feedItems().forEach(i => seen.add(i.key));
+  setSeen(seen);
+  updateFeedBadge();
+}
+let bannerTimer = null;
+function showBanner(item) {
+  const b = document.getElementById('banner');
+  if (!b) return;
+  document.getElementById('bannerTitle').textContent = item.title;
+  document.getElementById('bannerMsg').textContent = (item.msg || '').split('\n')[0];
+  b.classList.add('show');
+  clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(hideBanner, 7000);
+}
+function hideBanner() { const b = document.getElementById('banner'); if (b) b.classList.remove('show'); }
+
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function copyText(txt) {
+  try { await navigator.clipboard.writeText(txt); return true; }
+  catch(e) {
+    const ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch(err) {}
+    document.body.removeChild(ta);
+    return ok;
+  }
+}
+async function copyFeed(key) {
+  const it = feedItems().find(i => i.key === key);
+  if (!it) return;
+  const ok = await copyText(`${it.title}\n\n${it.msg}\n\n🏆 The 2026 Carolina Cup`);
+  toast(ok ? 'Copied — paste it in the group chat 📋' : 'Copy failed — long-press to select');
+}
+async function copyTopic() {
+  const ok = await copyText(NTFY_TOPIC);
+  toast(ok ? 'Channel name copied ✓' : NTFY_TOPIC);
+}
+function sendTestPush() {
+  if (myPlayerIdx !== ADMIN_IDX) return;
+  sendPush({ title: '🔔 Carolina Cup test', msg: 'If you can read this, notifications are working. See you on the first tee. ⛳', tags: ['bell'], priority: 3 });
+  toast('Test notification sent to everyone subscribed');
+}
+
+function renderFeed() {
+  const el = document.getElementById('feedContent');
+  if (!el) return;
+  const items = feedItems();
+  let html = notifSetupCard(true);
+  if (!items.length) {
+    html += `<div class="alert">No recaps yet. Hole alerts and roasts show up here (and on your lock screen) once scores start rolling in.</div>`;
+  } else {
+    items.forEach(it => {
+      const when = it.t ? new Date(it.t).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+      html += `<div class="feed-item">
+        <div class="feed-top"><div class="feed-title">${esc(it.title)}</div><div class="feed-time">${esc(when)}</div></div>
+        <div class="feed-msg">${esc(it.msg)}</div>
+        <button class="feed-copy" onclick="copyFeed('${esc(it.key)}')">📋 Copy for group chat</button>
+      </div>`;
+    });
+  }
+  el.innerHTML = html;
+}
+
+function notifSetupCard(compact) {
+  return `<div class="card notif-card">
+    <div class="card-hdr"><div class="card-title">🔔 Get Lock-Screen Alerts</div></div>
+    <div class="card-body">
+      <div class="notif-step"><span class="notif-num">1</span><span>Install the free <strong>ntfy</strong> app (App Store or Google Play). <a href="https://docs.ntfy.sh/subscribe/phone/" target="_blank" rel="noopener">Download links</a></span></div>
+      <div class="notif-step"><span class="notif-num">2</span><span>Open it, tap <strong>+</strong>, and subscribe to this channel (leave the server as ntfy.sh):</span></div>
+      <div class="notif-topic" onclick="copyTopic()"><code>${NTFY_TOPIC}</code><span>Tap to copy</span></div>
+      <div class="notif-step"><span class="notif-num">3</span><span>Allow notifications when it asks. That's it.</span></div>
+      ${compact ? '' : `<div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;">You'll get skins, birdies and blowups as each hole finishes, a roast every 6 holes, and final results after each round.</div>`}
+      ${myPlayerIdx === ADMIN_IDX ? `<button class="btn btn-green" style="margin-top:10px;" onclick="sendTestPush()">Send test notification</button>` : ''}
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════
+//  ROAST WRITER
+// ═══════════════════════════════════════════════
+const ROAST = {
+  eagle: [
+    "🦅 EAGLE. {n} makes {g} on the par {p} {h}. Somebody frame that scorecard.",
+    "🦅 {n} just eagled the {h}. Everyone else owes him a beer. Those are the rules now."
+  ],
+  birdie: [
+    "🐦 {n} birdies the {h}.",
+    "🐦 Birdie for {n} on the {h}. Try not to bring it up for the next three hours, {f}.",
+    "🐦 {n} with the birdie on the {h}. Stay humble. (He won't.)"
+  ],
+  blowup: [
+    "💀 {n} carded a {g} on the par {p} {h}. Local authorities have been notified.",
+    "💀 {n} made {g} on the {h}. That's not a golf score, that's a shoe size.",
+    "💀 A {g} for {n} on the {h}. The ball is fine. {f} is not.",
+    "💀 {n}: {g} on the par {p} {h}. Pour one out."
+  ],
+  snowman: [
+    "⛄ {n} built a snowman on the {h}. In October. In South Carolina.",
+    "⛄ {n} put an 8 on the {h}. Do you want to build a snowman? {f} did."
+  ],
+  skin: [
+    "💰 {n} steals the skin on the {h}{v}.",
+    "💰 Skin to {n} on the {h}{v}. Cash it in."
+  ],
+  carry: [
+    "🫙 Nobody wins the {h}. The pot is now {pot} skins deep ({pts} pts). Someone step up.",
+    "🫙 Tie on the {h}. {pot} skins ({pts} pts) now riding on the next hole."
+  ],
+  hot: [
+    "🔥 {n} went net {s} over holes {a}–{b}. Sandbagging investigation now open.",
+    "🔥 {n} is net {s} for holes {a}–{b}. Somebody check his bag for a second handicap card.",
+    "🔥 {n} (net {s}, holes {a}–{b}) is playing like his handicap was a typo."
+  ],
+  cold: [
+    "🧊 {n} is net {s} over holes {a}–{b}. The beer cart has been dispatched to his location.",
+    "🧊 {n} went net {s} across holes {a}–{b}. He's hit more trees than a lumberjack.",
+    "🧊 Thoughts and prayers for {n}: net {s} for holes {a}–{b}."
+  ],
+  champ: [
+    "👑 {n} wins the round. Expect to hear about it at dinner. And breakfast.",
+    "👑 {n} takes the round. Somebody get this man a jacket."
+  ],
+  last: [
+    "🪦 Bringing up the rear in the Cup: {n}. First round's on you.",
+    "🪦 Dead last in the Cup: {n}. Hydrate, reflect, try again."
+  ]
+};
+function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+function fill(t, o) { return t.replace(/\{(\w+)\}/g, (_, k) => (o[k] !== undefined ? o[k] : '')); }
+function sgn(n) { return n > 0 ? `+${n}` : n === 0 ? 'E' : `${n}`; }
+function ord(n) { const s = ['th','st','nd','rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+function courseShort(r) { return ['Willbrook','River Club','Pawleys'][r] || COURSES[r].name; }
+function grossH(r, pi, h) { const v = S.holeScores[r][pi][h]; return v === undefined ? null : v; }
+function netH(r, pi, h) { const g = grossH(r, pi, h); return g === null ? null : g - strokesPerHole(pi, r)[h]; }
+
+// Skins pot riding on the NEXT hole after hole h
+function potAfter(r, h) {
+  let carry = 0;
+  for (let i = 0; i <= h; i++) {
+    const nets = PLAYER_NAMES.map((_, pi) => netH(r, pi, i)).filter(x => x !== null);
+    if (nets.length < 2) { carry++; continue; }
+    const m = Math.min(...nets);
+    if (nets.filter(x => x === m).length === 1) carry = 0; else carry++;
+  }
+  return carry + 1;
+}
+
+function buildTeamsMsg() {
+  const lines = ['Round 1 · Scramble (Willbrook)'];
+  S.teams[0].forEach((t, i) => lines.push(`${TNAMES[i]}: ${t.players.map(p => PLAYER_NAMES[p]).join(' & ')}`));
+  lines.push('', 'Round 2 · Best Ball (River Club)');
+  S.teams[1].forEach((t, i) => lines.push(`${BBNAMES[i]}: ${t.players.map(p => PLAYER_NAMES[p]).join(', ')}`));
+  lines.push('', 'Teams are balanced by handicap. No excuses.');
+  return { title: '🏆 Carolina Cup teams are set', msg: lines.join('\n'), tags: ['trophy'], priority: 4 };
+}
+
+function buildHoleMsg(r, h) {
+  const par = COURSES[r].par[h];
+  const hn = ord(h + 1);
+  const lines = [];
+  PLAYER_NAMES.forEach((name, pi) => {
+    const g = grossH(r, pi, h);
+    if (g === null) return;
+    const d = g - par;
+    const o = { n: name, f: name.split(' ')[0], g, p: par, h: hn };
+    if (d <= -2) lines.push(fill(pick(ROAST.eagle), o));
+    else if (d === -1) lines.push(fill(pick(ROAST.birdie), o));
+    else if (d >= 3 && g === 8) lines.push(fill(pick(ROAST.snowman), o));
+    else if (d >= 3) lines.push(fill(pick(ROAST.blowup), o));
+  });
+  const sw = calcSkins(r);
+  let skinLine = null;
+  for (const pi in sw) {
+    const w = sw[pi].find(x => x.hole === h + 1);
+    if (w) skinLine = fill(pick(ROAST.skin), { n: PLAYER_NAMES[pi], h: hn, v: w.value > 1 ? ` (${w.value} skins, ${w.value * SKIN_PTS} pts)` : ` (+${SKIN_PTS} pts)` });
+  }
+  if (!skinLine) {
+    const pot = potAfter(r, h);
+    if (pot >= 3) skinLine = fill(pick(ROAST.carry), { h: hn, pot, pts: pot * SKIN_PTS });
+  }
+  if (skinLine) lines.unshift(skinLine);
+  if (!lines.length) return null; // quiet hole — nothing worth a buzz
+  return { title: `⛳ ${courseShort(r)} · Hole ${h + 1}`, msg: lines.slice(0, 4).join('\n'), tags: ['golf'], priority: 3 };
+}
+
+function formatStatus(r, thru, final) {
+  const fmt = S.formats[r];
+  const parThru = COURSES[r].par.slice(0, thru).reduce((a, b) => a + b, 0);
+  if (fmt === 'scramble') {
+    const rows = S.teams[r].map((t, ti) => {
+      let g = 0;
+      for (let h = 0; h < thru; h++) g += Math.min(...t.players.map(p => grossH(r, p, h)).filter(x => x !== null));
+      const allow = scrambleTeamHcp(t.players);
+      return { ti, names: t.players.map(p => PLAYER_NAMES[p]).join(' & '), rel: final ? (g - allow) - parThru : g - parThru, net: g - allow };
+    }).sort((a, b) => a.rel - b.rel);
+    return (final ? '🏌️ Scramble final (net):' : `🏌️ Scramble thru ${thru} (gross):`) + '\n' +
+      rows.map((x, i) => `${i + 1}. ${x.names} ${final ? `net ${x.net} · +${SCRAMBLE_PTS[i]} pts each` : sgn(x.rel)}`).join('\n');
+  }
+  if (fmt === 'bestball') {
+    const tn = S.teams[r].map(t => {
+      let n = 0;
+      for (let h = 0; h < thru; h++) n += Math.min(...t.players.map(p => netH(r, p, h)).filter(x => x !== null));
+      return n - parThru;
+    });
+    const lead = tn[0] < tn[1] ? 0 : tn[1] < tn[0] ? 1 : -1;
+    const head = `⚔️ Best ball ${final ? 'final' : 'thru ' + thru} (net): Team A ${sgn(tn[0])} · Team B ${sgn(tn[1])}`;
+    if (lead === -1) return head + (final ? `\nAll square. ${BB_PTS.tie} pts each.` : '\nAll square.');
+    const diff = Math.abs(tn[0] - tn[1]);
+    return head + (final
+      ? `\n${BBNAMES[lead]} wins by ${diff}. +${BB_PTS.win} pts each (losers get ${BB_PTS.lose}).`
+      : `\n${BBNAMES[lead]} up ${diff}.`);
+  }
+  // stroke
+  const rows = PLAYER_NAMES.map((n, pi) => {
+    let t = 0;
+    for (let h = 0; h < thru; h++) t += netH(r, pi, h) - COURSES[r].par[h];
+    return { pi, t };
+  }).sort((a, b) => a.t - b.t);
+  const show = final ? rows : rows.slice(0, 3);
+  return (final ? '🏌️ Stroke play final (net):' : `🏌️ Leaderboard thru ${thru} (net):`) + '\n' +
+    show.map((x, i) => `${i + 1}. ${PLAYER_NAMES[x.pi]} ${sgn(x.t)}${final ? ` · +${STROKE_PTS[i]} pts` : ''}`).join('\n');
+}
+
+function tripTotals() {
+  const rp = [0,1,2].map(r => calcRoundPts(r)), sp = [0,1,2].map(r => calcSkinsPts(r));
+  return PLAYER_NAMES.map((n, pi) => ({ pi, total: [0,1,2].reduce((a, r) => a + rp[r][pi] + sp[r][pi], 0) }))
+    .sort((a, b) => b.total - a.total);
+}
+function tripStandingsText() {
+  const medal = ['🥇','🥈','🥉'];
+  return '📊 Carolina Cup standings:\n' + tripTotals().map((x, i) => `${medal[i] || (i + 1) + '.'} ${PLAYER_NAMES[x.pi]} ${x.total}`).join('\n');
+}
+
+function buildSegmentMsg(r, s) {
+  const a = (s - 1) * 6, b = s * 6, final = s === 3;
+  const lines = [];
+  const seg = PLAYER_NAMES.map((_, pi) => {
+    let t = 0;
+    for (let h = a; h < b; h++) t += netH(r, pi, h) - COURSES[r].par[h];
+    return { pi, t };
+  }).sort((x, y) => x.t - y.t);
+  const hot = seg[0], cold = seg[seg.length - 1];
+  lines.push(fill(pick(ROAST.hot), { n: PLAYER_NAMES[hot.pi], s: sgn(hot.t), a: a + 1, b }));
+  if (cold.t > hot.t) lines.push(fill(pick(ROAST.cold), { n: PLAYER_NAMES[cold.pi], s: sgn(cold.t), a: a + 1, b }));
+
+  let worst = null;
+  PLAYER_NAMES.forEach((_, pi) => {
+    for (let h = a; h < b; h++) {
+      const g = grossH(r, pi, h), d = g - COURSES[r].par[h];
+      if (!worst || d > worst.d) worst = { pi, h, d, g };
+    }
+  });
+  if (worst && worst.d >= 3 && worst.pi !== cold.pi) {
+    const nm = PLAYER_NAMES[worst.pi];
+    lines.push(fill(pick(worst.g === 8 ? ROAST.snowman : ROAST.blowup), { n: nm, f: nm.split(' ')[0], g: worst.g, p: COURSES[r].par[worst.h], h: ord(worst.h + 1) }));
+  }
+
+  const sw = calcSkins(r), byP = {};
+  for (const pi in sw) sw[pi].filter(x => x.hole > a && x.hole <= b).forEach(x => { byP[pi] = (byP[pi] || 0) + x.value; });
+  const skinList = Object.entries(byP).sort((x, y) => y[1] - x[1]).map(([pi, v]) => `${PLAYER_NAMES[pi]} ×${v}`);
+  lines.push(skinList.length ? `💰 Skins this stretch: ${skinList.join(', ')}` : '💰 No skins won this stretch.');
+  if (!final) { const pot = potAfter(r, b - 1); if (pot >= 2) lines.push(`🫙 ${pot} skins riding on hole ${b + 1}.`); }
+
+  lines.push('', formatStatus(r, b, final));
+
+  if (final) {
+    if (S.formats[r] === 'stroke') lines.push('', fill(pick(ROAST.champ), { n: PLAYER_NAMES[seg.length ? PLAYER_NAMES.map((_, pi) => ({ pi, n: playerNetTotal(pi, r) })).sort((x, y) => x.n - y.n)[0].pi : 0] }));
+    lines.push('', tripStandingsText());
+    const tt = tripTotals();
+    lines.push('', fill(pick(ROAST.last), { n: PLAYER_NAMES[tt[tt.length - 1].pi] }));
+  }
+
+  return {
+    title: final ? `🏁 Round ${r + 1} final · ${COURSES[r].name}` : `📣 ${courseShort(r)} recap · thru ${b}`,
+    msg: lines.join('\n'),
+    tags: [final ? 'checkered_flag' : 'loudspeaker'],
+    priority: final ? 4 : 3
+  };
 }
 
 // ═══════════════════════════════════════════════
@@ -573,13 +1081,14 @@ function toast(m) {
 }
 function showTab(n) {
   document.querySelectorAll('.tab').forEach((t,i) =>
-    t.classList.toggle('active', ['setup','scoring','skins','standings','guide'][i] === n));
+    t.classList.toggle('active', ['setup','scoring','skins','standings','feed','guide'][i] === n));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-'+n).classList.add('active');
   if (n === 'scoring')   renderScoring();
   if (n === 'skins')     renderSkins();
   if (n === 'standings') renderStandings();
   if (n === 'setup')     renderSetupTab();
+  if (n === 'feed')      { renderFeed(); markFeedSeen(); hideBanner(); }
 }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 function renderAll() {
@@ -587,6 +1096,8 @@ function renderAll() {
   renderSkins();
   renderStandings();
   renderSetupTab();
+  renderFeed();
+  updateFeedBadge();
 }
 
 // ═══════════════════════════════════════════════
@@ -612,7 +1123,7 @@ function selectPlayer(i) {
   renderAll();
 
   // Prompt for handicap if not yet set — same flow for everyone including admin
-  if (S.handicaps[i] === null) {
+  if (S.handicaps[i] == null) {
     setTimeout(() => showHcpPrompt(i), 300);
   }
 }
@@ -626,24 +1137,26 @@ function showHcpPrompt(i) {
 }
 
 async function saveHcpPrompt() {
-  const val = document.getElementById('hcpPromptInput').value;
-  if (val === '' || isNaN(parseInt(val))) {
-    document.getElementById('hcpPromptInput').style.borderColor = 'var(--red)';
+  const input = document.getElementById('hcpPromptInput');
+  const n = parseInt(input.value);
+  if (input.value === '' || isNaN(n) || n < 0 || n > 54) {
+    input.style.borderColor = 'var(--red)';
     return;
   }
-  S.handicaps[myPlayerIdx] = parseInt(val);
+  input.style.borderColor = '';
+  S.handicaps[myPlayerIdx] = n;
+  queueWrite(`handicaps/${myPlayerIdx}`, n);   // writes ONLY this player's handicap
 
-  // Auto-generate teams if all 8 handicaps are now set
   if (allHandicapsSet() && !S.teamsGenerated) {
     generateFairTeams();
+    queueWrite('teams', S.teams);
+    queueWrite('teamsGenerated', true);
     toast('All handicaps in — fair teams generated! 🏌️');
   } else {
     const remaining = S.handicaps.filter(h => h === null).length;
     toast(`Handicap saved ✓  (${remaining} player${remaining !== 1 ? 's' : ''} still TBD)`);
   }
-
   closeModal('hcpPromptModal');
-  await dbSave();
   renderAll();
 }
 
@@ -715,7 +1228,7 @@ function allHandicapsSet() {
   return S.handicaps.every(h => h !== null && h !== undefined);
 }
 function generateFairTeams() {
-  const sorted = S.handicaps.map((h,i) => ({pi:i, hcp:h})).sort((a,b) => a.hcp - b.hcp);
+  const sorted = S.handicaps.map((h,i) => ({pi:i, hcp:h})).sort((a,b) => (a.hcp - b.hcp) || (a.pi - b.pi));
   S.teams[0] = [
     {players:[sorted[0].pi, sorted[7].pi]},
     {players:[sorted[1].pi, sorted[6].pi]},
@@ -755,11 +1268,12 @@ function holeInputsRow(r, pi) {
 //  SCORE ENTRY
 // ═══════════════════════════════════════════════
 function setHS(r, pi, h, val) {
-  if (pi !== myPlayerIdx) return; // guard — only edit own scores
-  if (!S.holeScores[r]) S.holeScores[r] = Array(8).fill(null).map(() => ({}));
-  if (!S.holeScores[r][pi]) S.holeScores[r][pi] = {};
-  S.holeScores[r][pi][h] = val === '' ? '' : parseInt(val);
-  dbSave(); // debounced — fires 800ms after last keystroke
+  if (pi !== myPlayerIdx) return; // only edit your own scores
+  const n = normNum(val);
+  const mine = Object.assign({}, S.holeScores[r][pi]);
+  if (n === null || n < 1) delete mine[h]; else mine[h] = n;
+  S.holeScores[r][pi] = mine;
+  queueWrite(`holeScores/${r}/${pi}`, mine);   // writes ONLY this player's card for this round
 }
 
 // ═══════════════════════════════════════════════
@@ -1149,7 +1663,10 @@ function renderSetupTab() {
   // Teams
   const teamsBody = document.getElementById('teamsBody');
   if (!S.teamsGenerated || !allHandicapsSet()) {
-    teamsBody.innerHTML = `<div class="alert" style="margin:0">${allHandicapsSet()?'Teams pending admin generation.':'Handicaps not yet entered. Jacob G will set these up.'}</div>`;
+    const missing = PLAYER_NAMES.filter((_,i) => S.handicaps[i] === null);
+    teamsBody.innerHTML = `<div class="alert" style="margin:0">${missing.length
+      ? `Teams generate automatically once everyone's handicap is in.<br><br><strong style="color:var(--gold-lt)">Still waiting on:</strong> ${missing.join(', ')}`
+      : 'Generating teams…'}</div>`;
   } else {
     let th = '';
     // Scramble teams
@@ -1198,6 +1715,10 @@ function renderSetupTab() {
   });
   document.getElementById('holeHcpBody').innerHTML = hcpHtml;
 
+  // Notification setup card
+  const slot = document.getElementById('notifSetupSlot');
+  if (slot) slot.innerHTML = notifSetupCard(false);
+
   // Admin button visibility
   document.getElementById('adminBtn').style.display = myPlayerIdx === ADMIN_IDX ? 'block' : 'none';
 }
@@ -1220,19 +1741,18 @@ function showAdminModal() {
 
 async function saveAdminSetup() {
   if (myPlayerIdx !== ADMIN_IDX) return;
-  const newHcps = PLAYER_NAMES.map((_,i) => {
-    const val = document.getElementById(`admin-hcp-${i}`).value;
-    return val === '' ? null : parseInt(val);
-  });
+  const newHcps = PLAYER_NAMES.map((_,i) => normNum(document.getElementById(`admin-hcp-${i}`).value));
   S.handicaps = newHcps;
+  queueWrite('handicaps', newHcps);
   if (newHcps.every(h => h !== null)) {
     generateFairTeams();
+    queueWrite('teams', S.teams);
+    queueWrite('teamsGenerated', true);
     toast('Handicaps saved — fair teams generated!');
   } else {
-    toast('Handicaps saved — enter all 8 to generate teams.');
+    toast('Handicaps saved — teams generate once all 8 are in.');
   }
   closeModal('adminModal');
-  await dbSave();
   renderAll();
 }
 
@@ -1240,28 +1760,37 @@ async function saveAdminSetup() {
 //  INIT
 // ═══════════════════════════════════════════════
 async function init() {
-  // Restore player identity from local storage
   const saved = localStorage.getItem('myPlayerIdx');
-  if (saved !== null) {
+  if (saved !== null && !isNaN(parseInt(saved))) {
     myPlayerIdx = parseInt(saved);
     updatePlayerPill();
     document.getElementById('adminBtn').style.display = myPlayerIdx === ADMIN_IDX ? 'block' : 'none';
   }
 
-  // Load initial state from Firebase FIRST so handicap data is current
+  // Show anything saved on this phone right away, then load the real data
+  applyRemote();
+  renderAll();
+  setSyncStatus('syncing', 'Loading…');
   await dbLoad();
 
-  // Now check — show player select if identity unknown, or handicap prompt if hcp missing
   if (myPlayerIdx === null) {
     setTimeout(showPlayerModal, 400);
-  } else if (S.handicaps[myPlayerIdx] === null) {
+  } else if (S.handicaps[myPlayerIdx] == null) {
     setTimeout(() => showHcpPrompt(myPlayerIdx), 400);
   }
 
-  // Start real-time push sync
   startRealtimeSync();
+  if (pendingCount()) flush();          // send anything left over from a dead zone
 
-  renderAll();
+  // Recover quickly after signal loss or the phone being locked
+  window.addEventListener('online', () => { flush(); dbLoad(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    dbLoad();
+    flush();
+    if (!fbListener || fbListener.readyState === 2) startRealtimeSync();
+  });
+  setInterval(() => { if (document.visibilityState === 'visible') dbLoad(); }, 30000);
 }
 
 init();
