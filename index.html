@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>The 2026 Carolina Cup</title>
+<meta name="theme-color" content="#12201a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Carolina Cup">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;600;700&display=swap');
 :root{
@@ -297,6 +305,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--white);min-
     </div>
   </div>
 
+  <div id="homeScreenSlot"></div>
   <div id="notifSetupSlot"></div>
 
   <div class="card">
@@ -852,6 +861,35 @@ function renderFeed() {
     });
   }
   el.innerHTML = html;
+}
+
+function isStandalone() {
+  return window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+}
+function homeScreenCard() {
+  if (isStandalone()) return '';
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  const isAndroid = /Android/i.test(ua);
+  let steps;
+  if (isIOS) {
+    steps = `<div class="notif-step"><span class="notif-num">1</span><span>Make sure you're in <strong>Safari</strong> (not the iMessage preview).</span></div>
+      <div class="notif-step"><span class="notif-num">2</span><span>Tap the <strong>Share</strong> button (square with the arrow).</span></div>
+      <div class="notif-step"><span class="notif-num">3</span><span>Tap <strong>Add to Home Screen</strong>, then <strong>Add</strong>.</span></div>`;
+  } else if (isAndroid) {
+    steps = `<div class="notif-step"><span class="notif-num">1</span><span>In <strong>Chrome</strong>, tap the <strong>⋮</strong> menu.</span></div>
+      <div class="notif-step"><span class="notif-num">2</span><span>Tap <strong>Add to Home screen</strong> or <strong>Install app</strong>.</span></div>`;
+  } else {
+    steps = `<div class="notif-step"><span class="notif-num">📱</span><span>Open this link on your phone, then use Safari's <strong>Share → Add to Home Screen</strong> (iPhone) or Chrome's <strong>⋮ → Add to Home screen</strong> (Android).</span></div>`;
+  }
+  return `<div class="card notif-card">
+    <div class="card-hdr"><div class="card-title">📲 Put the Cup on Your Home Screen</div></div>
+    <div class="card-body">
+      ${steps}
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5;">Opens full-screen like a real app with the Carolina Cup icon. On iPhone it'll ask your name once more the first time. Your scores and handicap are safe.</div>
+    </div>
+  </div>`;
 }
 
 function notifSetupCard(compact) {
@@ -1714,6 +1752,10 @@ function renderSetupTab() {
     </div>`;
   });
   document.getElementById('holeHcpBody').innerHTML = hcpHtml;
+
+  // Home screen helper (hidden once they're using the home screen icon)
+  const hs = document.getElementById('homeScreenSlot');
+  if (hs) hs.innerHTML = homeScreenCard();
 
   // Notification setup card
   const slot = document.getElementById('notifSetupSlot');
